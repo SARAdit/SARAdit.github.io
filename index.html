@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SARA: Semantically Adaptive Relational Alignment for Video Diffusion Models</title>
+<meta name="description" content="Project page for SARA: a text-conditioned saliency aligner that routes token-relation distillation in video diffusion models, improving both text alignment and motion quality on Wan2.2.">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="SARA: Semantically Adaptive Relational Alignment for Video Diffusion Models">
+<meta property="og:description" content="A text-conditioned saliency aligner routes token-relation distillation in video diffusion models, improving both text alignment and motion quality.">
+<meta property="og:url" content="https://lian700.github.io/SARA/">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SARA: Semantically Adaptive Relational Alignment for Video Diffusion Models">
+<meta name="twitter:description" content="A text-conditioned saliency aligner routes token-relation distillation in video diffusion models, improving both text alignment and motion quality.">
+
+<meta name="theme-color" content="#0b1220">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #f8fafc;
+    --bg-card: #ffffff;
+    --bg-soft: #f1f5f9;
+    --fg: #0f172a;
+    --fg-soft: #475569;
+    --fg-muted: #94a3b8;
+    --line: #e2e8f0;
+    --accent: #2563eb;
+    --accent-soft: #dbeafe;
+    --accent-fg: #1e3a8a;
+    --good: #059669;
+    --good-soft: #d1fae5;
+    --bad: #be123c;
+    --pretrained: #94a3b8;
+    --sft: #6366f1;
+    --videorepa: #0ea5e9;
+    --moalign: #f59e0b;
+    --sara: #10b981;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+                 Roboto, "Noto Sans CJK SC", sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.55;
+    font-size: 16px;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, .mono { font-family: "SF Mono", "JetBrains Mono", Consolas, monospace; }
+
+/* ---- layout ---- */
+.container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+.container-wide {
+    max-width: min(2200px, 99vw);
+    margin: 0 auto;
+    padding: 0 8px;
+}
+section { padding: 48px 0; border-bottom: 1px solid var(--line); }
+section:last-of-type { border-bottom: none; }
+h1, h2, h3 { color: var(--fg); margin: 0 0 12px; }
+h1 { font-size: 34px; line-height: 1.25; letter-spacing: -0.02em; }
+h2 { font-size: 24px; margin-top: 0; letter-spacing: -0.01em; }
+h3 { font-size: 18px; }
+p { margin: 0 0 14px; color: var(--fg-soft); }
+
+/* ---- header ---- */
+header.hero {
+    background: linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
+    padding: 64px 0 36px;
+    border-bottom: 1px solid var(--line);
+    text-align: center;
+}
+header.hero .venue {
+    display: inline-block;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 16px;
+}
+header.hero h1 { max-width: 920px; margin: 0 auto 16px; }
+header.hero h1 .acronym {
+    background: linear-gradient(135deg, #10b981 0%, #2563eb 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+header.hero .authors {
+    color: var(--fg); font-size: 15px; margin-bottom: 6px;
+    max-width: 940px; margin-left: auto; margin-right: auto;
+    line-height: 1.7;
+}
+header.hero .authors strong { font-weight: 600; }
+header.hero .affiliations {
+    color: var(--fg-soft); font-size: 14px; margin-bottom: 8px;
+    max-width: 940px; margin-left: auto; margin-right: auto;
+}
+header.hero .note {
+    color: var(--fg-muted); font-size: 12.5px; max-width: 720px; margin: 0 auto;
+    line-height: 1.55;
+}
+header.hero .note code {
+    background: var(--bg-soft); padding: 1px 6px; border-radius: 4px;
+    font-size: 12px; color: var(--fg-soft);
+}
+header.hero .links {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 10px; margin: 22px auto 0;
+}
+header.hero .links a {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 18px;
+    background: var(--bg-card);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 14px; font-weight: 600;
+    text-decoration: none;
+    transition: border-color 0.15s, color 0.15s, transform 0.15s;
+}
+header.hero .links a:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+/* ---- TL;DR ---- */
+.tldr {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin: 24px 0 8px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.tldr-label {
+    display: inline-block;
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--good); background: var(--good-soft);
+    padding: 3px 10px; border-radius: 999px; margin-bottom: 10px;
+}
+.tldr p { margin: 0; color: var(--fg); }
+
+/* ---- abstract ---- */
+.abstract { font-size: 16px; }
+.abstract strong { color: var(--fg); }
+
+/* ---- key contributions ---- */
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+}
+.card h3 {
+    margin: 0 0 8px;
+    font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--accent);
+}
+.card p { margin: 0; font-size: 14px; }
+@media (max-width: 800px) { .cards { grid-template-columns: 1fr; } }
+
+/* ---- figure block ---- */
+.figure-block {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px;
+    margin: 18px 0 8px;
+    text-align: center;
+}
+.figure-block img {
+    max-width: 100%; height: auto;
+    border-radius: 8px;
+    display: block; margin: 0 auto;
+}
+.figure-block .figcap {
+    margin: 14px auto 0;
+    font-size: 13px; color: var(--fg-soft);
+    max-width: 880px; line-height: 1.55;
+    text-align: left;
+}
+.figure-block .figcap b { color: var(--fg); }
+
+.figure-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    margin-top: 14px;
+}
+.figure-grid figure {
+    margin: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+}
+.figure-grid figure img { max-width: 100%; height: auto; display: block; border-radius: 6px; }
+.figure-grid figure figcaption {
+    margin-top: 10px; font-size: 12.5px; color: var(--fg-soft); line-height: 1.5;
+}
+.figure-grid figure figcaption .qtag {
+    display: inline-block;
+    font-family: "SF Mono", "JetBrains Mono", Consolas, monospace;
+    font-size: 11px;
+    background: var(--accent-soft);
+    color: var(--accent-fg);
+    padding: 2px 7px; border-radius: 4px;
+    margin-right: 6px; font-weight: 600;
+}
+@media (max-width: 800px) { .figure-grid { grid-template-columns: 1fr; } }
+
+.viz-row-wide {
+    display: grid; grid-template-columns: 1.55fr 1fr; gap: 16px;
+    margin-top: 14px;
+}
+.viz-row-wide figure {
+    margin: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex; flex-direction: column;
+}
+.viz-row-wide figure img { max-width: 100%; height: auto; display: block; border-radius: 6px; }
+.viz-row-wide figure figcaption {
+    margin-top: 10px; font-size: 12.5px; color: var(--fg-soft); line-height: 1.5;
+}
+@media (max-width: 900px) { .viz-row-wide { grid-template-columns: 1fr; } }
+
+/* ---- pipeline diagram ---- */
+.pipeline {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 28px 24px;
+    margin-top: 12px;
+    overflow-x: auto;
+}
+.pipeline-row {
+    display: flex; align-items: stretch; gap: 12px; flex-wrap: nowrap;
+    justify-content: center; min-width: 880px;
+}
+.pipeline-stage {
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+    min-width: 220px;
+    flex: 1 1 0;
+    text-align: center;
+}
+.pipeline-stage .badge {
+    display: inline-block; font-size: 10px; letter-spacing: 0.18em;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+    background: var(--accent-soft); color: var(--accent-fg); font-weight: 600;
+    margin-bottom: 8px;
+}
+.pipeline-stage h4 { margin: 0 0 6px; font-size: 14px; color: var(--fg); }
+.pipeline-stage p { margin: 0; font-size: 12.5px; color: var(--fg-soft); }
+.pipeline-stage.sara { border-color: var(--sara); background: #ecfdf5; }
+.pipeline-stage.sara .badge { background: var(--good-soft); color: var(--good); }
+.pipeline-arrow {
+    align-self: center; color: var(--fg-muted); font-size: 22px;
+    user-select: none;
+}
+
+/* ---- results table ---- */
+.results-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;
+}
+.result-table {
+    background: var(--bg-card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 20px; overflow: hidden;
+}
+.result-table h3 { margin: 0 0 12px; font-size: 14px; color: var(--accent); letter-spacing: 0.04em; text-transform: uppercase; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th, td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+tr:last-child td { border-bottom: none; }
+.row-best td { font-weight: 700; color: var(--good); background: rgba(16, 185, 129, 0.08); }
+.row-oracle td { color: var(--fg-muted); font-style: italic; }
+@media (max-width: 800px) { .results-grid { grid-template-columns: 1fr; } }
+
+/* ---- method legend ---- */
+.legend {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    justify-content: center; margin: 16px 0 28px;
+}
+.legend-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 999px;
+    background: var(--bg-card); border: 1px solid var(--line);
+    font-size: 12px; color: var(--fg-soft); font-weight: 500;
+}
+.legend-pill .dot { width: 10px; height: 10px; border-radius: 50%; }
+.legend-pill.is-sara { background: var(--good-soft); color: var(--good); border-color: transparent; font-weight: 700; }
+
+/* ---- sample cards ---- */
+.sample-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 10px 12px;
+    margin-bottom: 14px;
+    scroll-margin-top: 24px;
+}
+.sample-card .header-row {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 10px;
+}
+.sample-card .id {
+    font-family: "SF Mono", monospace; font-size: 12px;
+    color: var(--accent-fg); background: var(--accent-soft);
+    padding: 3px 9px; border-radius: 6px; font-weight: 600;
+}
+.sample-card .index-num { color: var(--fg-muted); font-size: 13px; font-weight: 600; }
+.sample-card .caption-wrap {
+    background: var(--bg-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13.5px; color: var(--fg-soft);
+}
+.sample-card .key-points {
+    margin-top: 8px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-left: 3px solid #f59e0b;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 13.5px;
+    color: #7c2d12;
+    line-height: 1.5;
+}
+.sample-card .key-points .kp-label {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #b45309;
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-right: 8px;
+    font-weight: 700;
+    vertical-align: 2px;
+}
+.sample-card .caption-preview {
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+}
+.sample-card .caption-preview .toggle {
+    color: var(--fg-muted); font-size: 11px; margin-left: 6px; white-space: nowrap;
+}
+.sample-card .mtss {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--fg-soft);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--line);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+                 Roboto, "Noto Sans CJK SC", sans-serif;
+    max-height: 60vh;
+    overflow-y: auto;
+    display: none;
+}
+.sample-card .mtss.open { display: block; }
+.sample-card .mtss .mtss-section {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-fg);
+    background: var(--accent-soft);
+    padding: 2px 9px;
+    border-radius: 4px;
+    margin: 8px 0 2px;
+}
+.sample-card .mtss .mtss-shot {
+    display: inline-block;
+    font-weight: 700;
+    color: var(--good);
+    background: var(--good-soft);
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+.sample-card .mtss .ent {
+    display: inline-block;
+    padding: 0 5px;
+    border-radius: 3px;
+    font-family: "SF Mono", "JetBrains Mono", Consolas, monospace;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--fg);
+    background: rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.18);
+}
+.sample-card .mtss .ent.person { background: rgba(99, 102, 241, 0.10); border-color: rgba(99, 102, 241, 0.22); color: #4338ca; }
+.sample-card .mtss .ent.object { background: rgba(245, 158, 11, 0.10); border-color: rgba(245, 158, 11, 0.25); color: #92400e; }
+.sample-card .mtss .ent.scene  { background: rgba(16, 185, 129, 0.10); border-color: rgba(16, 185, 129, 0.25); color: var(--good); }
+.sample-card .mtss .sub {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 4px;
+    background: #fef3c7;
+    color: #78350f;
+    border: 1px solid #fcd34d;
+    font-size: 12px;
+}
+.sample-card .mtss .time {
+    color: var(--fg-muted);
+    font-family: "SF Mono", "JetBrains Mono", Consolas, monospace;
+    font-size: 11.5px;
+}
+.sample-card .mtss .keypoint {
+    background: #fff7ed;
+    color: #9a3412;
+    padding: 0 4px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+.video-row {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 4px; margin-top: 8px;
+}
+@media (max-width: 1280px) { .video-row { grid-template-columns: repeat(5, 1fr); gap: 3px; } }
+@media (max-width:  980px) { .video-row { grid-template-columns: repeat(3, 1fr); gap: 4px; } }
+@media (max-width:  680px) { .video-row { grid-template-columns: repeat(2, 1fr); gap: 4px; } }
+@media (max-width:  440px) { .video-row { grid-template-columns: 1fr; } }
+.video-tile {
+    border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+    background: #000; position: relative;
+}
+.video-tile.is-sara {
+    border-color: var(--sara);
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.18);
+}
+.video-tile video {
+    width: 100%; height: auto; display: block;
+    background: #000; aspect-ratio: 16 / 9; object-fit: contain;
+}
+.video-tile .label {
+    position: absolute; top: 6px; left: 6px;
+    font-size: 11px; font-weight: 700;
+    padding: 2px 7px; border-radius: 4px;
+    color: #fff; background: rgba(15, 23, 42, 0.72);
+    letter-spacing: 0.02em;
+    backdrop-filter: blur(4px);
+}
+.video-tile.is-sara .label { background: var(--sara); }
+.video-tile.is-pretrained .label { background: var(--pretrained); color: #0f172a; }
+.video-tile.is-sft       .label { background: var(--sft); }
+.video-tile.is-videorepa .label { background: var(--videorepa); }
+.video-tile.is-moalign   .label { background: var(--moalign); color: #422006; }
+
+/* ---- search bar ---- */
+.search-row {
+    display: flex; gap: 12px; margin: 0 0 18px; align-items: center; flex-wrap: wrap;
+}
+.search-row input {
+    flex: 1 1 320px;
+    padding: 10px 14px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--bg-card);
+    color: var(--fg); font-size: 14px; outline: none;
+}
+.search-row input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.search-row .count { color: var(--fg-muted); font-size: 13px; }
+.search-row button {
+    padding: 8px 14px; font-size: 13px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--bg-card); color: var(--fg-soft);
+    cursor: pointer;
+}
+.search-row button:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---- bibtex ---- */
+.bibtex-block {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 12px;
+    padding: 18px 22px;
+    font-family: "SF Mono", "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.55;
+    overflow-x: auto;
+    white-space: pre;
+    margin: 0;
+    position: relative;
+}
+.bibtex-wrap { position: relative; }
+.bibtex-copy {
+    position: absolute; top: 12px; right: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.bibtex-copy:hover { background: rgba(255, 255, 255, 0.16); }
+
+footer {
+    padding: 28px 0 60px; text-align: center; color: var(--fg-muted); font-size: 13px;
+}
+
+/* ============================================================= */
+/* ==============  Premium redesign (overrides)  =============== */
+/* ============================================================= */
+:root {
+    --bg: #f5f7fb;
+    --bg-card: #ffffff;
+    --bg-soft: #eef2f8;
+    --fg: #0b1220;
+    --fg-soft: #475569;
+    --fg-muted: #8a97a8;
+    --line: #e7ecf3;
+    --line-strong: #d6dee9;
+    --accent: #2563eb;
+    --accent-fg: #1e3a8a;
+    --accent-soft: #e6efff;
+    --grad: linear-gradient(120deg, #10b981 0%, #2563eb 55%, #6366f1 100%);
+    --shadow-sm: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.04);
+    --shadow-md: 0 14px 34px -16px rgba(16,24,40,.26), 0 2px 8px rgba(16,24,40,.05);
+    --shadow-lg: 0 36px 70px -26px rgba(16,24,40,.34);
+    --radius: 18px;
+}
+
+html { scroll-behavior: smooth; }
+body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+                 Roboto, "Noto Sans CJK SC", sans-serif;
+    background:
+        radial-gradient(1200px 620px at 82% -8%, rgba(37,99,235,.07), transparent 60%),
+        radial-gradient(1000px 520px at -8% -4%, rgba(16,185,129,.07), transparent 56%),
+        var(--bg);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+h1, h2, h3, h4 { font-family: "Plus Jakarta Sans", "Inter", sans-serif; letter-spacing: -0.022em; }
+h2 { font-size: 30px; font-weight: 800; line-height: 1.15; }
+h3 { font-weight: 700; }
+section { padding: 84px 0; scroll-margin-top: 72px; }
+
+/* ---- eyebrow ---- */
+.eyebrow {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-family: "Inter", sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 14px;
+}
+.eyebrow::before { content: ""; width: 22px; height: 2px; border-radius: 2px; background: var(--grad); }
+
+/* ---- sticky nav ---- */
+.nav {
+    position: sticky; top: 0; z-index: 60;
+    backdrop-filter: saturate(170%) blur(14px);
+    -webkit-backdrop-filter: saturate(170%) blur(14px);
+    background: rgba(255,255,255,.74);
+    border-bottom: 1px solid var(--line);
+}
+.nav-inner { max-width: 1180px; margin: 0 auto; padding: 11px 24px; display: flex; align-items: center; gap: 16px; }
+.nav-brand { display: flex; align-items: baseline; gap: 9px; font-family: "Plus Jakarta Sans"; font-weight: 800; font-size: 18px; letter-spacing: -.02em; color: var(--fg); }
+.nav-brand .mark { background: var(--grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.nav-brand .sub { font-family: "Inter"; font-weight: 500; font-size: 11.5px; color: var(--fg-muted); letter-spacing: 0; }
+.nav-links { display: flex; gap: 2px; margin-left: auto; align-items: center; }
+.nav-links a { padding: 8px 12px; border-radius: 10px; font-size: 14px; font-weight: 500; color: var(--fg-soft); transition: background .15s, color .15s; }
+.nav-links a:hover, .nav-links a.active { background: var(--bg-soft); color: var(--fg); text-decoration: none; }
+.nav-cta {
+    margin-left: 8px; padding: 8px 16px !important; border-radius: 999px !important;
+    background: var(--grad); color: #fff !important; font-weight: 600;
+    box-shadow: 0 8px 18px -8px rgba(37,99,235,.55);
+}
+.nav-cta:hover { color: #fff !important; filter: brightness(1.06); }
+@media (max-width: 820px) { .nav-hide { display: none !important; } }
+
+/* ---- hero ---- */
+header.hero {
+    position: relative; overflow: hidden;
+    background: linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
+    padding: 92px 0 74px;
+}
+.hero-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.hero-bg::before {
+    content: ""; position: absolute; inset: 0;
+    background-image:
+        linear-gradient(to right, rgba(15,23,42,.045) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(15,23,42,.045) 1px, transparent 1px);
+    background-size: 40px 40px;
+    -webkit-mask-image: radial-gradient(62% 60% at 50% 28%, #000 0%, transparent 76%);
+            mask-image: radial-gradient(62% 60% at 50% 28%, #000 0%, transparent 76%);
+}
+.hero-glow { position: absolute; border-radius: 50%; filter: blur(72px); opacity: .42; }
+.hero-glow.g1 { width: 460px; height: 460px; left: -90px; top: -130px; background: radial-gradient(circle, #10b981, transparent 70%); }
+.hero-glow.g2 { width: 540px; height: 540px; right: -110px; top: -170px; background: radial-gradient(circle, #2563eb, transparent 70%); }
+header.hero .container { position: relative; z-index: 1; }
+header.hero .venue {
+    background: rgba(255,255,255,.8); border: 1px solid var(--line);
+    color: var(--accent-fg); box-shadow: var(--shadow-sm);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+header.hero h1 { font-size: clamp(32px, 4.6vw, 52px); font-weight: 800; line-height: 1.08; max-width: 1000px; }
+header.hero .links { margin-top: 28px; }
+header.hero .links a { padding: 11px 20px; box-shadow: var(--shadow-sm); }
+header.hero .links a.btn-primary {
+    background: var(--grad); color: #fff; border-color: transparent;
+    box-shadow: 0 12px 26px -10px rgba(37,99,235,.6);
+}
+header.hero .links a.btn-primary:hover { color: #fff; filter: brightness(1.06); transform: translateY(-1px); }
+header.hero .links a svg { width: 16px; height: 16px; }
+
+.hero-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 36px auto 0; max-width: 820px; }
+.hero-stat { flex: 1 1 210px; background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; box-shadow: var(--shadow-sm); text-align: center; }
+.hero-stat .num { font-family: "Plus Jakarta Sans"; font-weight: 800; font-size: 24px; background: var(--grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.1; }
+.hero-stat .lbl { font-size: 12.5px; color: var(--fg-soft); margin-top: 5px; }
+
+/* ---- tldr ---- */
+.tldr { border-radius: var(--radius); box-shadow: var(--shadow-sm); border-color: var(--line); position: relative; overflow: hidden; }
+.tldr::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--grad); }
+
+/* ---- contribution cards ---- */
+.cards { gap: 18px; counter-reset: card; }
+.card {
+    border-radius: 16px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+    counter-increment: card; padding: 24px 22px;
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.card::before { content: ""; position: absolute; left: 0; top: 0; right: 0; height: 3px; background: var(--grad); }
+.card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--line-strong); }
+.card h3 { display: flex; align-items: center; gap: 11px; font-size: 15px; text-transform: none; letter-spacing: -.01em; color: var(--fg); }
+.card h3::before {
+    content: counter(card, decimal-leading-zero);
+    font-family: "Plus Jakarta Sans"; font-size: 12px; font-weight: 800; color: #fff;
+    background: var(--grad); width: 26px; height: 26px; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center; flex: none;
+}
+
+/* ---- figures / pipeline ---- */
+.figure-block, .pipeline { border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+.figure-grid figure, .viz-row-wide figure { border-radius: 14px; box-shadow: var(--shadow-sm); transition: transform .2s, box-shadow .2s; }
+.figure-grid figure:hover, .viz-row-wide figure:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.pipeline-stage { border-radius: 12px; }
+.pipeline-arrow { font-size: 24px; }
+
+/* ---- tables ---- */
+.result-table { border-radius: 16px; box-shadow: var(--shadow-sm); transition: box-shadow .2s; }
+.result-table:hover { box-shadow: var(--shadow-md); }
+table { font-variant-numeric: tabular-nums; }
+.row-best td { background: linear-gradient(90deg, rgba(16,185,129,.16), rgba(16,185,129,.05)); }
+
+/* ---- legend pills ---- */
+.legend-pill { box-shadow: var(--shadow-sm); }
+
+/* ---- sample cards / video ---- */
+.sample-card { border-radius: 16px; box-shadow: var(--shadow-sm); transition: box-shadow .2s; }
+.sample-card:hover { box-shadow: var(--shadow-md); }
+.video-tile { border-radius: 10px; }
+
+/* ---- search ---- */
+.search-row input { border-radius: 12px; box-shadow: var(--shadow-sm); }
+.search-row button { border-radius: 10px; transition: border-color .15s, color .15s, background .15s; }
+
+/* ---- bibtex ---- */
+.bibtex-block { border-radius: 14px; box-shadow: var(--shadow-lg); }
+
+/* ---- footer ---- */
+footer {
+    background: #0b1220; color: #94a3b8;
+    padding: 40px 0 56px; margin-top: 0;
+}
+footer a { color: #cbd5e1; }
+.footer-brand { font-family: "Plus Jakarta Sans"; font-weight: 800; font-size: 20px; color: #fff; margin-bottom: 6px; letter-spacing: -.02em; }
+.footer-brand .mark { background: var(--grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+/* ---- scroll reveal ---- */
+.reveal { opacity: 0; transform: translateY(20px); transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1 !important; transform: none !important; transition: none; } }
+
+/* ============================================================= */
+/* ====================  Motion / animation  ================== */
+/* ============================================================= */
+
+/* drifting hero glows */
+@keyframes floatA { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(40px,30px) scale(1.12); } }
+@keyframes floatB { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-50px,40px) scale(1.1); } }
+.hero-glow.g1 { animation: floatA 14s ease-in-out infinite; }
+.hero-glow.g2 { animation: floatB 18s ease-in-out infinite; }
+
+/* animated gradient text (acronym, marks, stat numbers) */
+@keyframes gradShift { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+header.hero h1 .acronym, .nav-brand .mark, .footer-brand .mark, .hero-stat .num {
+    background: linear-gradient(120deg, #10b981, #2563eb, #6366f1, #10b981);
+    background-size: 200% auto;
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    animation: gradShift 6s linear infinite;
+}
+
+/* staggered hero entrance */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+header.hero .container > * { opacity: 0; animation: fadeUp .8s cubic-bezier(.2,.7,.2,1) forwards; }
+header.hero .container > .venue       { animation-delay: .05s; }
+header.hero .container > h1           { animation-delay: .15s; }
+header.hero .container > .authors     { animation-delay: .28s; }
+header.hero .container > .affiliations{ animation-delay: .38s; }
+header.hero .container > .links       { animation-delay: .48s; }
+header.hero .container > .hero-stats  { animation-delay: .60s; }
+
+/* link / button shine on hover */
+header.hero .links a, .nav-cta { position: relative; overflow: hidden; }
+header.hero .links a::after, .nav-cta::after {
+    content: ""; position: absolute; top: 0; left: -120%; width: 60%; height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
+    transform: skewX(-18deg); transition: none;
+}
+header.hero .links a:hover::after, .nav-cta:hover::after { animation: shine .8s ease; }
+@keyframes shine { to { left: 130%; } }
+
+/* card icon badge subtle pop on hover */
+.card:hover h3::before { transform: scale(1.08) rotate(-3deg); }
+.card h3::before { transition: transform .25s ease; }
+
+/* pipeline flow arrows */
+@keyframes flowArrow { 0%,100% { opacity: .35; transform: translateX(0); } 50% { opacity: 1; transform: translateX(4px); } }
+.pipeline-arrow { animation: flowArrow 1.8s ease-in-out infinite; }
+.pipeline-arrow:nth-of-type(4) { animation-delay: .4s; }
+
+/* stat strip hover */
+.hero-stat { transition: transform .2s ease, box-shadow .2s ease; }
+.hero-stat:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+
+/* reveal stagger for grids */
+.reveal .card, .reveal .figure-grid figure, .reveal .result-table, .reveal .hero-stat { transition: transform .55s cubic-bezier(.2,.7,.2,1), box-shadow .2s; }
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-glow, header.hero h1 .acronym, .nav-brand .mark, .footer-brand .mark,
+    .hero-stat .num, header.hero .container > *, .pipeline-arrow { animation: none !important; }
+    header.hero .container > * { opacity: 1 !important; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+    <div class="nav-inner">
+        <a class="nav-brand" href="#top">
+            <span class="mark">SARA</span>
+            <span class="sub nav-hide">Semantically Adaptive Relational Alignment</span>
+        </a>
+        <div class="nav-links">
+            <a href="#abstract" class="nav-hide">Abstract</a>
+            <a href="#pipeline" class="nav-hide">Method</a>
+            <a href="#visualizations" class="nav-hide">Visualizations</a>
+            <a href="#results" class="nav-hide">Results</a>
+            <a href="#qualitative">Gallery</a>
+            <a href="https://github.com/lian700/SARA" target="_blank" rel="noopener" class="nav-cta">Code</a>
+        </div>
+    </div>
+</nav>
+
+<header class="hero" id="top">
+    <div class="hero-bg" aria-hidden="true">
+        <span class="hero-glow g1"></span>
+        <span class="hero-glow g2"></span>
+    </div>
+    <div class="container">
+        <span class="venue">Tencent Hunyuan</span>
+        <h1><span class="acronym">SARA</span>: Semantically Adaptive Relational Alignment for Video Diffusion Models</h1>
+        <p class="authors">
+            <strong>Jiesong Lian</strong><sup>1,2&dagger;</sup> &nbsp;·&nbsp;
+            <strong>Zixiang Zhou</strong><sup>2</sup> &nbsp;·&nbsp;
+            <strong>Ruizhe Zhong</strong><sup>3</sup> &nbsp;·&nbsp;
+            <strong>Yuan Zhou</strong><sup>2&Dagger;</sup> &nbsp;·&nbsp;
+            <strong>Qinglin Lu</strong><sup>2</sup>
+            <br>
+            <strong>Rui Wang</strong><sup>1&sect;</sup> &nbsp;·&nbsp;
+            <strong>Long Hu</strong><sup>1</sup> &nbsp;·&nbsp;
+            <strong>Yixue Hao</strong><sup>1</sup> &nbsp;·&nbsp;
+            <strong>Baoru Huang</strong><sup>4</sup>
+        </p>
+        <p class="affiliations">
+            <sup>1</sup>Huazhong University of Science and Technology &nbsp;&middot;&nbsp;
+            <sup>2</sup>Tencent Hunyuan &nbsp;&middot;&nbsp;
+            <sup>3</sup>Shanghai Jiao Tong University &nbsp;&middot;&nbsp;
+            <sup>4</sup>University of Liverpool
+        </p>
+        <div class="links">
+            <a class="btn-primary" href="https://arxiv.org/abs/2605.07800" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                arXiv
+            </a>
+            <a href="https://arxiv.org/pdf/2605.07800" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+                PDF
+            </a>
+            <a href="https://github.com/lian700/SARA" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 4.6 18 4.9 18 4.9c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+                Code
+            </a>
+        </div>
+    </div>
+</header>
+
+<section id="teaser" style="padding-top:56px; padding-bottom:56px;">
+<div class="container">
+    <figure class="figure-block" style="margin:0;">
+        <img src="figures/teaser.png" alt="SARA teaser: pair-routing overview">
+        <figcaption class="figcap" style="text-align:center; max-width:940px;"><b>SARA routes representation-alignment supervision by the prompt, not by pixels.</b> <b>(1)&nbsp;Token-relation distillation</b> matches the pairwise token relations of the DiT features <em>V<sub>p</sub></em> to a frozen VFM <em>V<sub>y</sub></em>, weighting all <em>O</em>(<em>N</em><sup>2</sup>) pairs equally &mdash; here FG&ndash;FG and FG&ndash;BG are only 23% and 50% of pairs, so 27% of the budget is spent on background&ndash;background pairs that seldom carry the subject interactions the prompt describes. <b>(2)&nbsp;Semantically Adaptive Relational Distillation</b> feeds the prompt entities into a frozen text-conditioned Semantic Aligner <em>&Phi;</em> that predicts a per-token saliency, then an OR pair-routing operator <em>W<sub>ij</sub></em>&nbsp;=&nbsp;<em>w<sub>i</sub></em>+<em>w<sub>j</sub></em>&minus;<em>w<sub>i</sub>w<sub>j</sub></em> keeps adaptive weights on FG&ndash;FG and FG&ndash;BG pairs while dropping BG&ndash;BG.</figcaption>
+    </figure>
+</div>
+</section>
+
+<section id="abstract">
+<div class="container">
+    <span class="eyebrow">Overview</span>
+    <h2>Abstract</h2>
+    <div class="abstract">
+    <p>Recent video diffusion models (VDMs) synthesize visually convincing clips, yet still drop entities, mis-bind attributes, and weaken the interactions specified in the prompt. Representation-alignment objectives such as <em>VideoREPA</em> and <em>MoAlign</em> improve fine-grained text following by distilling spatio-temporal token relations from a frozen visual foundation model, but their pairwise supervision budget is allocated by visual or motion cues rather than by how relevant each pair is to the prompt.</p>
+    <p>We present <strong>SARA</strong>, <em>Semantically Adaptive Relational Alignment</em>, which keeps token-relation distillation (TRD) on a frozen VFM target and adds a <strong>text-conditioned saliency</strong> that decides <em>which</em> token pairs carry supervision. A lightweight Stage&nbsp;1 aligner is trained with per-entity SAM&nbsp;3.1 mask supervision and an InfoNCE regulariser, and its continuous saliency is fused into TRD through a <em>pair-routing operator</em> that assigns each token pair a weight whenever <em>either</em> of its two endpoints is salient. In the Wan2.2 continual-training setting, SARA improves both text alignment and motion quality over SFT, VideoREPA, and MoAlign on a 13-dimension VLM rubric, on the public VBench benchmarks, and in a blind user study.</p>
+    </div>
+
+    <div class="tldr">
+        <span class="tldr-label">TL;DR</span>
+        <p>SARA recasts representation alignment for video diffusion as a <strong>pair-routing problem</strong>. A frozen text-conditioned saliency aligner (trained from per-entity SAM&nbsp;3.1 masks + InfoNCE) tells token-relation distillation <em>which</em> token pairs to supervise, focusing the loss on subject&ndash;subject and subject&ndash;background relations rather than background filler.</p>
+    </div>
+</div>
+</section>
+
+<section id="contributions">
+<div class="container">
+    <span class="eyebrow">What's new</span>
+    <h2>Key Contributions</h2>
+    <div class="cards">
+        <div class="card">
+            <h3>Pair-routing view</h3>
+            <p>We recast semantic adaptation for VDMs as a pair-routing problem on top of TRD, and formalise a family of <em>pair-routing operators</em> (AND&thinsp;/&thinsp;OR&thinsp;/&thinsp;XOR) that decide which token pairs carry supervision.</p>
+        </div>
+        <div class="card">
+            <h3>Text-conditioned saliency</h3>
+            <p>A lightweight aligner is trained from <em>per-entity</em> SAM&nbsp;3.1 masks, per-entity captions, and an InfoNCE regulariser, producing a calibrated continuous saliency that is then fused into TRD.</p>
+        </div>
+        <div class="card">
+            <h3>Consistent gains</h3>
+            <p>Under matched Wan2.2 high-noise continual training, SARA outperforms SFT, VideoREPA, and a MoAlign reproduction on a 13-dimension VLM rubric, on VBench-1.0&nbsp;/&nbsp;2.0, and in a blind user study.</p>
+        </div>
+    </div>
+</div>
+</section>
+
+<section id="pipeline">
+<div class="container">
+    <span class="eyebrow">How it works</span>
+    <h2>Pipeline</h2>
+    <p>SARA decouples <em>where</em> relational alignment should be applied from <em>how</em> it is computed. Stage&nbsp;1 trains a saliency aligner with per-entity supervision; Stage&nbsp;2 freezes the aligner and uses its prediction to route a masked token-relation distillation loss during continual training of the VDM.</p>
+
+    <figure class="figure-block">
+        <img src="figures/pipeline.png" alt="SARA pipeline overview" style="width:80%;">
+        <figcaption class="figcap"><b>Overview of SARA.</b> <em>Stage&nbsp;I (top):</em> a lightweight aligner on top of frozen V-JEPA, SAM&nbsp;3.1, and Qwen3-VL-Embedding backbones learns, for any (video, caption) pair, a text-conditioned per-patch saliency <em>M<sub>p</sub></em>, supervised jointly by per-entity, combined-entity, and background SAM masks (BCE) and calibrated by a caption-level InfoNCE. <em>Stage&nbsp;II (bottom):</em> the frozen aligner is queried with the full caption, and its saliency is turned into pair weights that route a masked token-relation distillation loss, added to the diffusion loss of a trainable DiT.</figcaption>
+    </figure>
+
+    <div class="pipeline">
+        <div class="pipeline-row">
+            <div class="pipeline-stage">
+                <span class="badge">Stage 1 · Train</span>
+                <h4>Text-conditioned saliency aligner</h4>
+                <p>V-JEPA tokens fused with the caption via cross-attention, supervised by per-entity SAM&nbsp;3.1 masks (BCE) and an InfoNCE regulariser.</p>
+            </div>
+            <div class="pipeline-arrow">&rarr;</div>
+            <div class="pipeline-stage">
+                <span class="badge">Stage 2 · Freeze</span>
+                <h4>Continuous saliency M<sub>p</sub></h4>
+                <p>The frozen aligner is queried with the full caption and emits a per-patch saliency on the V-JEPA grid.</p>
+            </div>
+            <div class="pipeline-arrow">&rarr;</div>
+            <div class="pipeline-stage sara">
+                <span class="badge">Stage 2 · Train VDM</span>
+                <h4>OR-routed masked TRD</h4>
+                <p>Pair weight <em>W</em><sub>ij</sub><sup>&or;</sup>&nbsp;= <em>w<sub>i</sub></em>+<em>w<sub>j</sub></em>&minus;<em>w<sub>i</sub>w<sub>j</sub></em> routes TRD onto subject&ndash;subject and subject&ndash;background pairs, dropping background&ndash;background filler.</p>
+            </div>
+        </div>
+    </div>
+</div>
+</section>
+
+<section id="visualizations">
+<div class="container">
+    <span class="eyebrow">Inside the model</span>
+    <h2>Method Visualizations</h2>
+    <p>What does the saliency aligner actually learn? The figures below trace the supervision signal end-to-end: from the per-entity SAM&nbsp;3.1 masks that train Stage&nbsp;1, to the four query types that the aligner routes during training, to the continuous saliency that Stage&nbsp;2 emits on the full prompt at inference time, and finally to how the OR pair-routing operator reshapes the TRD budget.</p>
+
+    <h3 style="margin-top:30px;">Per-entity SAM&nbsp;3.1 supervision (Stage&nbsp;1 targets)</h3>
+    <figure class="figure-block">
+        <img src="figures/sam3_entity_masks.jpg" alt="SAM 3.1 per-entity decomposition">
+        <figcaption class="figcap"><b>SAM&nbsp;3.1 entity decomposition used as Stage&nbsp;1 supervision.</b> Top row: input frames. Next three rows: per-entity masks for <code>OBJECT_1</code> (red), <code>PERSON_1</code> (green), <code>PERSON_2</code> (blue). Last two rows: complement <code>BACKGROUND</code> (<em>M</em><sub>bg</sub> = <strong>1</strong>&minus;<em>M</em><sub>fg</sub>, yellow) and foreground union <code>ALL Entities</code> (<em>M</em><sub>fg</sub>, magenta). All five masks supervise the saliency head jointly via <em>K</em>+2 forwards.</figcaption>
+    </figure>
+
+    <h3 style="margin-top:30px;">Stage&nbsp;1 saliency on the four supervision-time query types</h3>
+    <p>Same clip, four different captions fed to the aligner. Each panel shows the input frames, the SAM&nbsp;3.1 reference mask <em>M<sub>y</sub></em>, a PCA visualization of the text-conditioned features <em>V'<sub>y</sub></em>, and the predicted saliency <em>M<sub>p</sub></em> (jet colormap, redder = higher).</p>
+    <div class="figure-grid">
+        <figure>
+            <img src="figures/stage1-case1-part-person1.jpg" alt="Stage 1 saliency: PERSON_1 query">
+            <figcaption><span class="qtag">c<sub>1</sub> = PERSON_1</span> The aligner concentrates almost all its mass on the targeted person and leaves the rest of the scene close to zero.</figcaption>
+        </figure>
+        <figure>
+            <img src="figures/stage1-case1-part-person2.jpg" alt="Stage 1 saliency: PERSON_2 query">
+            <figcaption><span class="qtag">c<sub>2</sub> = PERSON_2</span> Swapping the entity caption shifts the highlight cleanly to the second subject without touching the first.</figcaption>
+        </figure>
+        <figure>
+            <img src="figures/stage1-case1-part-all-entities.jpg" alt="Stage 1 saliency: combined-entity query">
+            <figcaption><span class="qtag">c<sub>fg</sub> = [c<sub>1</sub>; c<sub>2</sub>; &hellip;]</span> Concatenating per-entity captions yields a calibrated foreground union that matches the SAM <em>M</em><sub>fg</sub> reference.</figcaption>
+        </figure>
+        <figure>
+            <img src="figures/stage1-case1-part-background.jpg" alt="Stage 1 saliency: background query">
+            <figcaption><span class="qtag">c<sub>bg</sub> = background</span> A pure scene caption pushes saliency onto the cafeteria walls and floor while suppressing the people &mdash; exactly the inverse of the union mask.</figcaption>
+        </figure>
+    </div>
+
+    <h3 style="margin-top:30px;">Stage&nbsp;2 saliency on the full MTSS caption (inference)</h3>
+    <figure class="figure-block">
+        <img src="figures/stage2-mtss-infer-case1.jpg" alt="Stage 2 saliency on the full MTSS caption">
+        <figcaption class="figcap"><b>Stage&nbsp;2 saliency on the full MTSS caption.</b> The aligner is now queried with the same long structured caption that the VDM also consumes at TRD time. Crucially, <em>M<sub>p</sub></em> is <em>not</em> a hard binary mask: it places the highest values on the named subjects and <em>adaptively</em> fades through intermediate values on nearby background to low values on far-field background &mdash; which is what the OR pair weight <em>W</em><sup>&or;</sup> needs to <em>grade</em>, rather than just <em>gate</em>, each subject&ndash;background pair.</figcaption>
+    </figure>
+
+    </div>
+</section>
+
+<section id="results">
+<div class="container">
+    <span class="eyebrow">Evidence</span>
+    <h2>Quantitative Results</h2>
+    <p>Under matched Wan2.2 high-noise continual training, SARA wins every aggregate score across three independent protocols. The 13-dimension VLM rubric is averaged over three judges (Qwen3.5-27B, Qwen3.6-35B-A3B, Gemma-4-31B-it).</p>
+
+    <div class="results-grid">
+        <div class="result-table">
+            <h3>VLM Rubric (mean over 3 judges)</h3>
+            <table>
+                <thead>
+                    <tr><th>Method</th><th>TA mean</th><th>TA vote</th><th>MQ mean</th><th>MQ vote</th></tr>
+                </thead>
+                <tbody>
+                    <tr class="row-oracle"><td>Real video (oracle)</td><td>4.586</td><td>4.648</td><td>4.431</td><td>4.581</td></tr>
+                    <tr><td>Pretrained Wan2.2</td><td>3.919</td><td>3.926</td><td>3.818</td><td>3.877</td></tr>
+                    <tr><td>SFT</td><td>4.121</td><td>4.139</td><td>3.784</td><td>3.851</td></tr>
+                    <tr><td>VideoREPA</td><td>4.125</td><td>4.154</td><td>3.802</td><td>3.865</td></tr>
+                    <tr><td>MoAlign</td><td>4.127</td><td>4.154</td><td>3.802</td><td>3.871</td></tr>
+                    <tr class="row-best"><td>SARA (ours)</td><td>4.154</td><td>4.167</td><td>3.852</td><td>3.919</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="result-table">
+            <h3>Public VBench (%)</h3>
+            <table>
+                <thead>
+                    <tr><th>Method</th><th>VB-1.0 Sem.</th><th>VB-2.0 Final</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Pretrained Wan2.2</td><td>72.74</td><td>55.00</td></tr>
+                    <tr><td>VideoREPA</td><td>72.99</td><td>55.24</td></tr>
+                    <tr><td>MoAlign</td><td>72.95</td><td>55.81</td></tr>
+                    <tr class="row-best"><td>SARA (ours)</td><td>73.89</td><td>56.19</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</section>
+
+<section id="qualitative">
+<div class="container-wide">
+    <span class="eyebrow">See for yourself</span>
+    <h2>Qualitative Comparisons</h2>
+    <p>Side-by-side renderings on 18 multi-subject test prompts. All methods share the same Wan2.2 high-noise backbone, the same continual-training schedule, and the same V-JEPA target; only the auxiliary objective changes. Click a caption to read the full prompt.</p>
+
+    <div class="legend">
+        <span class="legend-pill"><span class="dot" style="background: var(--pretrained);"></span>Pretrained Wan2.2</span>
+        <span class="legend-pill"><span class="dot" style="background: var(--sft);"></span>SFT (CT_Baseline)</span>
+        <span class="legend-pill"><span class="dot" style="background: var(--videorepa);"></span>VideoREPA (CT-REPA)</span>
+        <span class="legend-pill"><span class="dot" style="background: var(--moalign);"></span>MoAlign</span>
+        <span class="legend-pill is-sara"><span class="dot" style="background: var(--sara);"></span>SARA (ours)</span>
+    </div>
+
+    <div class="search-row">
+        <input id="searchInput" type="text" placeholder="Search captions (e.g. 'forest', 'kitchen', 'subtitle')..." oninput="filterSamples()">
+        <span class="count" id="countLabel"></span>
+        <button onclick="setAll(true)">Expand all</button>
+        <button onclick="setAll(false)">Collapse all</button>
+    </div>
+
+    <div id="sampleList"></div>
+</div>
+</section>
+
+<section id="bibtex">
+<div class="container">
+    <span class="eyebrow">Cite</span>
+    <h2>BibTeX</h2>
+    <p>If you find this work useful, please consider citing:</p>
+    <div class="bibtex-wrap">
+        <button class="bibtex-copy" onclick="copyBibtex(this)">Copy</button>
+        <pre class="bibtex-block" id="bibtex-text">@article{lian2026sara,
+  title   = {SARA: Semantically Adaptive Relational Alignment for Video Diffusion Models},
+  author  = {Lian, Jiesong and Zhou, Zixiang and Zhong, Ruizhe and Zhou, Yuan and
+             Lu, Qinglin and Wang, Rui and Hu, Long and Hao, Yixue and Huang, Baoru},
+  journal = {arXiv preprint arXiv:2605.07800},
+  year    = {2026}
+}</pre>
+    </div>
+</div>
+</section>
+
+<footer>
+    <div class="container">
+        <div class="footer-brand"><span class="mark">SARA</span></div>
+        <div>Semantically Adaptive Relational Alignment for Video Diffusion Models</div>
+        <div style="margin-top:10px;">
+            &copy; 2026 Jiesong Lian et al. &middot;
+            <a href="https://github.com/lian700/SARA">Source on GitHub</a> &middot;
+            <a href="https://arxiv.org/abs/2605.07800">arXiv</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+function copyBibtex(btn) {
+    const text = document.getElementById("bibtex-text").innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        const original = btn.textContent;
+        btn.textContent = "Copied!";
+        setTimeout(() => { btn.textContent = original; }, 1500);
+    });
+}
+</script>
+
+<!--
+  The full MTSS captions for the 18 qualitative samples are embedded as JSON
+  below.  Regenerate this block by re-running the sibling helper script
+  (which dumps captions.json) and pasting the result between the marker tags.
+-->
+<script type="application/json" id="captions-data">[{"id": "sample_001", "original_id": "sample_00004", "key_points": "Person count: nine people in the prompt; SARA and VideoREPA come closest with eight.", "caption": "[Global Setup]\nOverall Scene: In a luxurious living room, a group of elaborately dressed men confront a couple. The man in a black cloak addresses an older, central figure with a dialogue that includes Chinese subtitles, suggesting a dramatic or fantasy-themed confrontation.\nGlobal Style: A cinematic, high-definition video with a static, high-angle shot. The scene is brightly lit with natural light, creating a clean and sharp visual quality. The color palette is natural, dominated by the light wood and white of the room, green curtains, and the medium blue of a patterned rug. The overall tone is tense and dramatic.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (A man with a sword and red hooded cloak, standing on the left.):\nA man appearing to be in his 30s. He has long dark hair, a full dark beard, and mustache. He is wearing a distinctive, long, tattered red hooded cloak that conceals most of his face and body. He is also wearing dark clothing underneath.\nFor clothing, the person wears A long, tattered red hooded cloak and dark attire. Their hairstyle is Long dark hair.\n\nPERSON_2 (A man in formal black attire, standing on the far left.):\nA tall, slim man appearing to be in his 30s. He has short, styled dark hair. He is dressed in a sleek, modern black suit with a black inner shirt.\nFor clothing, the person wears A black suit and a black inner shirt. Their hairstyle is Short, styled dark hair.\n\nPERSON_3 (A man in a long blue and white robe, standing next to PERSON_2.):\nA man appearing to be in his 30s with short, styled dark hair. He is wearing a long, elegant coat that is blue on the top half and white on the bottom half, held together by a wide white sash tied at the waist.\nFor clothing, the person wears A long coat divided into blue (top) and white (bottom), with a wide white sash. Their hairstyle is Short, styled dark hair.\n\nPERSON_4 (An older man in a military-style uniform and green cloak at the center.):\nAn older, heavyset man, likely in his 60s or 70s. He wears a military-style uniform consisting of a long olive green cape with a fur-lined collar, a matching cap with a red band, and dark trousers. His expression is stern. He has a small medal pinned to his left chest.\nFor clothing, the person wears A military-style olive green cape with fur collar, matching cap, and caped tunic. Their hairstyle is Short dark hair. Key accessories include A military cap and a medal.\n\nPERSON_5 (An older, bald man in a gold-embroidered black jacket.):\nA balding man, appearing to be in his 50s or 60s. He has a slender build and is wearing a black, form-fitting jacket with intricate gold embroidery over a white shirt. There are also black patches on the sleeves.\nFor clothing, the person wears A black jacket with gold embroidery. Their hairstyle is Balding with short white hair on the sides.\n\nPERSON_6 (A man in a patterned suit standing next to PERSON_5.):\nA man appearing to be in his 30s. He is wearing a shiny, dark, iridescent suit with a bold, swirling black and white pattern. The suit is partially unbuttoned.\nFor clothing, the person wears A shiny, iridescent suit with a black and white swirling pattern. Their hairstyle is Short, styled dark hair.\n\nPERSON_7 (A man in a red, traditional-style jacket appearing towards the end.):\nA man appearing to be in his 40s. He is wearing a vibrant red, satin, high-collared jacket with a mandarin collar, reminiscent of traditional Chinese attire. His hair is short.\nFor clothing, the person wears A vibrant red, satin, high-collared jacket. Their hairstyle is Short hair.\n\nPERSON_8 (A woman in a period-style dress, seen from the back.):\nA woman with her hair tied up. She is wearing a period-style dress that is white on top with puffy, gathered sleeves and a tan skirt with a red underskirt.\nFor clothing, the person wears A white corseted blouse with puffy sleeves and a tan skirt with a red underskirt. Their hairstyle is Hair tied back.\n\nPERSON_9 (A man seen from the back, confronting the other group.):\nA man seen only from the back and side. He has short black hair. He is wearing a heavy, black velvet or velvet-like cloak that covers his shoulders and back, with a high white collar.\nFor clothing, the person wears A heavy black cloak with a high white collar. Their hairstyle is Short black hair.\n\nOBJECT_1 (A katana-style sword held by one of the men.):\nA katana-style sword with a blue-hilted tsuba (handguard) and a blade. It is being held by a man in a black cloak.\n\nSCENE_1 (A brightly lit, luxurious modern living room where a confrontation is taking place.):\nA spacious and modern living room with high ceilings. The flooring is a light-colored tile. A large, ornate blue rug with floral patterns covers part of the floor. The walls are white, with teal-colored curtains framing large windows and sliding doors. Furniture includes a light-colored sofa in front of the window.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 3.6s]\nThis shot is a static, high-angle long shot.\nIn a static high-angle long shot of [SCENE_1], seven men ([PERSON_1] to [PERSON_7]) stand in a line facing another couple, [PERSON_8] and [PERSON_9], whose backs are to the camera. The audience's perspective is over the shoulder of [PERSON_9]. The man on the far left, [PERSON_1], holds a sword ([OBJECT_1]). [PERSON_5] and the man next to him, [PERSON_6], briefly make hand gestures near their faces between 1.1s and 1.8s. [PERSON_7] appears partially obscured but then becomes more visible [2.1s]. Throughout the shot, [PERSON_9] speaks. The on-screen text <subtitle>难道你就是他们<\/subtitle> appears from [0.6s] to [1.8s], followed by <subtitle>口中说的仙人<\/subtitle> from [1.9s] to [2.7s].\n"}, {"id": "sample_002", "original_id": "sample_00059", "key_points": "Colors of the liquids in the two pitchers and the cups.", "caption": "[Global Setup]\nOverall Scene: A group of five people, including a main female character from behind, are sitting on a hilltop overlooking a town. A man in a patterned jacket enthusiastically serves a traditional fermented rice drink called Tteum枝露 from large pitchers into glasses, while another man reintroduces the beverage as a gift from the chairwoman of the church women's association.\nGlobal Style: The video has a realistic, cinematic style, resembling a scene from a modern television drama. The image quality is high-definition and sharp. The pacing is calm and natural. The shot is taken from a high angle, looking down at the group, and is static throughout. The color palette is natural and slightly muted, with the daytime, overcast lighting creating a soft and even illumination. The overall tone is casual and social.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (A young man who receives a glass of brown fermented rice drink.):\nA young East Asian male, likely in his early to mid-20s. He has fair skin and short, neatly styled black hair. He is wearing a long-sleeved button-down shirt with vertical white and black stripes, tucked into black trousers. He has a slender build.\nFor clothing, the person wears A long-sleeved, vertically striped white and black button-down shirt and black trousers. Their hairstyle is Short black hair, styled neatly.\n\nPERSON_2 (A man enthusiastically serving the drinks.):\nAn East Asian male, likely in his 30s, with short black hair. He appears cheerful and expressive. He is wearing a grey oversized jacket over a light grey crewneck sweater, and blue jeans. He carries a large shoulder bag with a white and black spotted pattern.\nFor clothing, the person wears A grey oversized jacket, a light grey sweater, and blue jeans. Their hairstyle is Short black hair. Key accessories include A patterned shoulder bag.\n\nPERSON_3 (A man in a suit observing the drink-serving process.):\nAn East Asian male, likely in his 30s, with short black hair. He has a serious expression. He is dressed in a dark grey double-breasted overcoat, a white dress shirt, and a striped tie. He wears a small microphone clipped to his tie.\nFor clothing, the person wears A dark grey double-breasted overcoat, a white dress shirt, and a striped tie. Their hairstyle is Short black hair. Key accessories include A small lapel microphone.\n\nPERSON_4 (A bespectacled man in a suit who introduces the beverage.):\nAn East Asian male, likely in his 30s, with short black hair and black-rimmed glasses. He is professionally dressed in a grey suit, a light blue dress shirt, and a dark tie with a silver tie clip. He wears a watch on his left wrist.\nFor clothing, the person wears A grey suit, a light blue shirt, and a dark tie. Their hairstyle is Short black hair. Key accessories include Black-rimmed glasses, a tie clip, and a watch.\n\nPERSON_5 (A woman observing the scene from a distance.):\nAn East Asian woman with short, bob-cut black hair. Only her back and left shoulder are visible. She is wearing a light blue denim jacket over a black top.\nFor clothing, the person wears A light blue denim jacket over a black top. Their hairstyle is Short black bob-cut.\n\nPERSON_6 (A woman in a black outfit participating in the gathering.):\nAn East Asian woman seen from the back and right side. She has dark hair tied back. She is wearing a black suit jacket and a black skirt or dress. She has a small, dark pin or brooch on her left shoulder.\nFor clothing, the person wears A black suit jacket and black skirt (or dress). Their hairstyle is Dark hair tied back. Key accessories include A small brooch or pin.\n\nOBJECT_1 (Large pitchers containing a brown, traditionally fermented rice drink.):\nLarge, translucent plastic pitchers filled with a cloudy, brownish-yellow liquid. Each pitcher is sealed with a blue plastic screw-on lid.\n\nOBJECT_2 (The individual glasses used for serving the drink.):\nTransparent, cylindrical plastic glasses used to hold the beverage.\n\nSCENE_1 (An outdoor hilltop picnic area overlooking a town.):\nAn outdoor setting on a hilltop, under the shade of a large tree. The group is gathered around a rectangular, mustard-yellow table. The background offers a panoramic view of a small town, fields, and distant hills under an overcast sky.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 3.3s]\nThis shot is a static shot, high angle medium shot.\nIn [SCENE_1], the camera holds a static, slightly high-angle medium-wide shot of a group of people sitting around a table. [PERSON_2] enthusiastically places [OBJECT_2] and two [OBJECT_1] onto the wet table surface [0.1s] and begins to unscrew the lids [0.4s]. To his left, [PERSON_1] claps his hands and reaches for the drinks [0.8s]. In the center, [PERSON_3] watches with a serious expression. To the right, [PERSON_4] leans in with a smile, pointing at the pitchers [1.0s]. On the far right, [PERSON_6] watches the interaction. At the front of the frame, the back of [PERSON_5] is visible. [PERSON_1] picks up a glass and places it under one of the pitchers [1.5s]. [PERSON_2] then reaches for his bag [1.9s]. The subtitle <subtitle>-喝杯冰凉的甜米露解解渴吧 -我来吧<\/subtitle> is displayed at the bottom of the screen from [0.0s] to [0.8s], followed by <subtitle>这是特蕾莎妇女会会长准备的<\/subtitle> from [1.1s] to [1.8s], followed by <subtitle>-来 -一定会非常好喝<\/subtitle> from [2.3s] to [3.2s].\n"}, {"id": "sample_003", "original_id": "sample_00074", "key_points": "Left-right balance of the weighing scale.", "caption": "[Global Setup]\nOverall Scene: In a room styled after a mid-20th century Chinese government office, a group of men and women are gathered around a balance scale. A man is being led away by two officials out of the room, while a new customer asks an attendant at the scale for the price of an item, receiving a price of 'sixty-five'.\nGlobal Style: The video has a realistic, cinematic style, reminiscent of a historical drama film or series. The image quality is clear and high-definition. The pace is calm and focused on the dialogue. The cinematography utilizes a static, high-angle shot. The color palette is muted, dominated by earth tones and blues, with natural lighting from a large window creating a slightly somber and authentic atmosphere.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (An official who is leading a man away from the room.):\nAn Asian male, appearing to be in his 40s or 50s. He has short, dark hair with a receding hairline. He is wearing a round-collared, single-breasted black jacket (similar to a Zhongshan suit coat) and matching dark trousers. He has a somewhat stout build.\nFor clothing, the person wears A black single-breasted jacket and dark trousers. Their hairstyle is Short, dark hair.\n\nPERSON_2 (The man being led away by the official.):\nAn Asian male, appearing to be in his late 30s or 40s. He has black hair. He is wearing a reddish-brown t-shirt underneath an unbuttoned, long-sleeved green jacket, and dark trousers. He carries a beige shoulder bag. His expression appears somewhat apprehensive.\nFor clothing, the person wears A green jacket over a red t-shirt, and dark trousers. Their hairstyle is Short black hair. Key accessories include A beige shoulder bag.\n\nPERSON_3 (An official standing by the window, observing the other interactions.):\nAn Asian male, appearing to be in his 30s. He has very short, neat black hair. He is wearing a black, high-collared, long-sleeved suit, resembling a Zhongshan suit. He stands with his hands held behind his back, observing the room with a neutral expression.\nFor clothing, the person wears A black Zhongshan-style suit. Their hairstyle is Short black hair.\n\nPERSON_4 (A female attendant at the scale, taking notes.):\nAn Asian female, appearing to be in her late 30s or 40s. Her black hair is pulled back from her face. She is wearing a blue-grey, single-breasted sleeveless jacket over a white collared shirt and dark trousers. She stands behind a wooden scale, holding a small notebook and a pen.\nFor clothing, the person wears A blue-grey jacket over a white shirt. Their hairstyle is Black hair pulled back.\n\nPERSON_5 (A man who appears to be a customer, asking a question at the scale.):\nAn Asian male, appearing to be in his 30s, with his back mostly to the camera. He has short black hair. He is wearing a simple, brown, long-sleeved robe-like tunic.\nFor clothing, the person wears A brown long-sleeved tunic. Their hairstyle is Short black hair.\n\nPERSON_6 (Another man at the scale, standing next to the customer.):\nAn Asian male, appearing to be in his 30s, seen only from the back. He has short black hair. He is wearing a blue-grey long-sleeved tunic, similar in style to PERSON_5's.\nFor clothing, the person wears A blue-grey long-sleeved tunic. Their hairstyle is Short black hair.\n\nOBJECT_1 (A traditional balance scale used for weighing goods.):\nA wooden balance scale, a specific type of steelyard. It consists of a main beam on a pivot, a short arm for the weight, and a long arm for the hung weight. The fulcrum is a fixed point on a wooden stand. The Sweden arm has a slide weight holder to measure.\n\nOBJECT_2 (A large black bag filled with goods for weighing.):\nA large, open-top black fabric sack, seemingly made of burlap, filled with a large quantity of yellowish-brown, granular or flaky material, possibly tobacco or another commodity.\n\nSCENE_1 (An office, likely from a mid-20th century Chinese setting, characterized by its functional and dated interior.):\nThe interior of a room with plain white walls fading to grey at the base, and a light blue-grey floor. There is a large window with white frames and metal bars. Furnishings include simple wooden benches, some with rattan seats, and a large green potted plant. A blue clipboard hangs on the wall. The lighting is ambient and slightly cool, entering from the window and a doorway to the left.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 3.2s]\nThis shot is a fixed, high-angle high-angle shot.\nIn [SCENE_1], a high-angle shot shows several people. [PERSON_1] and [PERSON_3] stand on the left near a doorway, where [OBJECT_2] is placed. [PERSON_1] gestures off-screen [0.1s] and then begins to guide [PERSON_2] with his right hand on [PERSON_2]'s back [0.3s], moving him towards the doorway. They walk out [1.4s]. On the right, [PERSON_4] stands at [OBJECT_1], writing in a notebook [0.9s]. In the center foreground, the backs of [PERSON_5] and [PERSON_6] are visible. [PERSON_5] turns his head slightly towards [PERSON_4] and speaks [2.3s]. <subtitle>哎。哎。即哥长。<\/subtitle> appears at [0.4s-0.9s].\n"}, {"id": "sample_004", "original_id": "sample_00076", "key_points": "Number of shoes and number of people.", "caption": "[Global Setup]\nOverall Scene: A group of musicians and a coach are gathered in a locker room during a filming session for a rap music video, where RZA, in the center, delivers a motivational speech to his group.\nGlobal Style: The video has a realistic, behind-the-scenes style. The visuals are clear and shot with a static camera. The lighting is dim and comes from an overhead source, creating a focused and intimate atmosphere. The color palette is dominated by dark, neutral tones from the clothing and the locker room, with the bright red shoes on the table serving as a focal point. The pace is steady, matching the rhythm of the spoken audio.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (The central figure and leader of the group, who is giving a speech. He appears to be the coach or mentor, later revealed to be the rapper RZA.):\nA middle-aged man with a light brown complexion and a buzz cut hairstyle. He has a muscular build. He is wearing a long-sleeved black zip-up athletic top.\nFor clothing, the person wears A long-sleeved black athletic zip-up top. Their hairstyle is A light-colored buzz cut.\n\nPERSON_2 (A tall, bald man standing in the background, listening intently.):\nA tall, muscular Black man with a completely shaved head. He is wearing a beige or light gray hooded sweatshirt over a dark shirt. He is wearing a gold-colored chain necklace.\nFor clothing, the person wears A beige hooded sweatshirt. Their hairstyle is Bald. Key accessories include A gold-colored chain necklace.\n\nPERSON_3 (A musician or rapper, \"雕刻家\"، standing on the left side of the group.):\nA middle-aged man with a light complexion and a shaved head. He has defined facial features and a serious expression. He is wearing a dark, possibly black, long-sleeved shirt.\nFor clothing, the person wears A dark long-sleeved shirt. Their hairstyle is Shaved head.\n\nPERSON_4 (A musician listening to the speech in the background.):\nA young Black man with short, styled black hair. He is wearing a white hooded sweatshirt with some green detailing. He has a serious, attentive posture.\nFor clothing, the person wears A white hooded sweatshirt. Their hairstyle is Short black hair.\n\nPERSON_5 (A member of the group sitting behind the main speaker.):\nA white man with short brown hair. He is wearing a black long-sleeved top and standing with his arms crossed, listening to the speech.\nFor clothing, the person wears A black long-sleeved top. Their hairstyle is Short brown hair.\n\nPERSON_6 (A member of the group sitting in the background, reacting with a smile.):\nA muscular, shirtless Black man sitting on a stool or bench. He is wearing dark sunglasses and has a shaved head. He has a broad, smiling expression.\nFor clothing, the person wears Shirtless. Their hairstyle is Shaved head. Key accessories include Dark sunglasses.\n\nOBJECT_1 (A pair of bright red Nike sneakers placed on a table in front of the main speaker.):\nA pair of modern-style basketball sneakers, primarily bright red, with white parts on the side panels and swoosh logo. They have white laces.\n\nOBJECT_2 (A pair of blue and red sneakers placed next to the red ones.):\nA pair of basketball sneakers with a blue upper, white sole, and red accents on the side and heel. They have white laces.\n\nSCENE_1 (The interior of a sports team's locker or dressing room.):\nA dimly lit locker room with light-colored walls. In the background, there are dark wood or metal lockers with hooks. The room has a casual, functional feel.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 5.0s]\nThis shot is a static, eye-level medium shot.\nIn a medium shot set in [SCENE_1], a group of men are gathered. [PERSON_1] stands in the center, speaking with an animated expression [0.3s]. He gestures with his left hand as he talks [0.3s]. To his left, [PERSON_2] and [PERSON_3] stand, listening. Behind them, [PERSON_4] is visible. In the foreground, [OBJECT_1] and [OBJECT_2] sit on a table. To the right, [PERSON_5] stands with his arms crossed, observing [PERSON_1]. [PERSON_6] sits on a bench in the background, smiling [1.4s] and briefly raising his right index finger [5.1s]. [PERSON_1] continues speaking and gesturing with his right hand over his heart [4.1s]. The on-screen text <subtitle>在快船队止步季后赛首轮后<\/subtitle> appears at [0.0s-4.8s], followed by <subtitle>有消息曝出威少并非自愿<\/subtitle> at [2.6s-4.8s], and <subtitle>将首发位置让给詹姆斯-哈登<\/subtitle> at [4.5s-5.0s].\n"}, {"id": "sample_005", "original_id": "sample_00117", "key_points": "Motion plausibility.", "caption": "[Global Setup]\nOverall Scene: In a brightly lit modern living room, a man dressed in traditional attire ropes a table with ornate cloths while acting out a tea ceremony for an audience of four. He then gestures, speaking the word 'Please'.\nGlobal Style: The video has a realistic, theatrical style, filmed in a single take with a fixed camera. The visual style is clean and crisp, characterized by high-definition quality and bright, even lighting. The color palette is a mix of the neutral tones of the room and the vibrant blue and white of the main characters' outfits, creating a visually engaging contrast. The overall pace is calm and deliberate, establishing a traditional and slightly performative atmosphere.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (A middle-aged man dressed in traditional attire, appearing to lead a performance or ceremony.):\nAn Asian man, appearing to be in his 40s or 50s. He wears glasses, has a topknot hairstyle, and has a black bowtie. He is dressed in a white, long-sleeved traditional Chinese jacket with toggle fastenings and black trousers. On his feet are black cloth shoes with white soles. He is holding a yellow and gold fan.\nFor clothing, the person wears A white traditional Chinese jacket, black trousers, and a black bowtie. Their hairstyle is Topknot with short hair. Key accessories include Glasses, a black bowtie.\n\nPERSON_2 (A young man dressed in a blue traditional suit, watching the performance.):\nA young Asian man, appearing to be in his late 20s. He has short, dark hair. He is wearing a traditional-style blue jacket with white trim over a lighter blue undershirt, and matching blue trousers. He is wearing black cloth shoes.\nFor clothing, the person wears A blue traditional Chinese half-suit with white trim. Their hairstyle is Short, dark hair.\n\nPERSON_3 (A woman in the background audience, smiling.):\nAn Asian woman with short, curly brown hair. She is wearing a sleeveless mustard-yellow top and is seated on a couch in the background with a smile.\nFor clothing, the person wears A sleeveless mustard-yellow top. Their hairstyle is Short, curly brown hair.\n\nPERSON_4 (A person in the background audience, seated next to PERSON_3.):\nAn Asian woman with short, dark hair. She is wearing a light brown short-sleeved top and is seated on a couch in the background, smiling.\nFor clothing, the person wears A light brown short-sleeved top. Their hairstyle is Short, dark hair.\n\nPERSON_5 (A man in the background audience, seated on the right.):\nAn Asian man with short, dark hair. He is wearing a light blue short-sleeved button-up shirt and is seated on a couch in the background.\nFor clothing, the person wears A light blue short-sleeved shirt. Their hairstyle is Short, dark hair.\n\nOBJECT_1 (An ornate, golden object used to demonstrate a tea ceremony.):\nAn ornate, crafted object that resembles a golden teapot or incense-burning device. It has a bulbous body, a handle, and a spout. It is used to demonstrate pouring.\n\nOBJECT_2 (A white table with a slatted top and white legs.):\nA modern-style rectangular table with a top made of white horizontal slats and four splayed white legs. It is positioned in the center of the room for the demonstration.\n\nOBJECT_3 (A white folding fan held by one of the characters.):\nA folded fan with a white frame and yellow fabric. There is a black brushstroke calligraphy painting on one of the panels, and the character '龙' is visible.\n\nSCENE_1 (The interior of a modern, brightly lit living room or product showroom.):\nA spacious and modern living room with large, light gray square tiles on the floor. The walls are white, and the room is brightly lit by a long, recessed ceiling light. It is furnished with a light gray sofa where several people are seated on a circular orange rug. A large potted plant and a piece of abstract wall art are visible in the background.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 3.4s]\nThis shot is a static, eye-level medium shot.\nIn [SCENE_1], [PERSON_1] stands on the left side of [OBJECT_2], facing [PERSON_2] on the right. [PERSON_1] holds up [OBJECT_1] and demonstrates pouring motions into two glasses on the table [0.5s]. [PERSON_1] then holds [OBJECT_3] in his left palm and gestures toward [PERSON_2] with his right index finger [1.0s]. [PERSON_1] lowers his right hand and gestures over [OBJECT_2] [1.8s], then lifts [OBJECT_3] and speaks [2.3s]. [PERSON_2] stands motionless and watchful throughout, watching [PERSON_1]'s actions. In the background, [PERSON_3], [PERSON_4], and [PERSON_5] remain seated on a couch, observing the scene with slight smiles.\n"}, {"id": "sample_006", "original_id": "sample_00148", "key_points": "Motion completeness.", "caption": "[Global Setup]\nOverall Scene: In a lavishly decorated ancient Chinese chamber, a eunuch is preparing a bowl of food for a man lying on a bed, while a noblewoman stands by and begins to speak to him. An influential woman in purple, accompanied by her attendants, observes the scene with a look of concern from the background.\nGlobal Style: This is a historical drama scene, filmed in high-definition with a cinematic quality. The visual style is characterized by its rich, warm color palette, dominated by golds, purples, and creams. The lighting is soft and atmospheric, primarily coming from candles within the room, which creates a sense of intimacy and elegance. The pace of the scene is slow, focusing on the dialogue and the careful actions of the characters. The camera work is simple, using a static medium shot to capture the entire interaction.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (A man lying down, appearing to be sick or injured.):\nAn Asian man, appearing to be in his 30s. He has dark hair styled up with a traditional black cap. His face is slightly sweaty. He is wearing loose-fitting, traditional light gray and blue patterned robes. He is covered by a dark gray quilt with a repeating circular design and is lying on a bed with a maroon-colored piyao (pillow).\nFor clothing, the person wears Light gray and blue patterned traditional robes. Their hairstyle is Dark hair styled up. Key accessories include A traditional black cap.\n\nPERSON_2 (A man who appears to be a eunuch, carefully feeding the man on the bed.):\nAn Asian man, likely in his 30s, with a fair complexion and short facial hair. He is dressed in a white inner robe with dark purple sleeves and a black sash or belt. He wears a tall, black, conical official's hat, which suggests a court eunuch or official. He has a focused expression as he tends to the other man.\nFor clothing, the person wears A white and dark purple traditional robe with a black sash. Their hairstyle is Short hair, covered by a hat. Key accessories include A tall, black, conical hat.\n\nPERSON_3 (A noblewoman, possibly a royal lady, observing the scene.):\nA young Asian woman, likely in her late 20s or early 30s. She has an elegant appearance with her dark hair styled in an elaborate updo adorned with yellow floral hairpins and ornaments. She is wearing a luxurious, light yellow traditional robe with delicate floral embroidery on the back and a green collar. She has a concerned expression.\nFor clothing, the person wears A light yellow robe with floral embroidery and a green collar. Their hairstyle is An elaborate dark hair updo. Key accessories include Yellow floral hairpins and ornaments.\n\nPERSON_4 (An influential woman in purple robes, possibly a concubine or consort, watching with a stern expression.):\nA woman of noble stature, likely in her late 30s or 40s. She is wearing a royal purple traditional robe with light blue and white floral patterns on the chest. Her hair is styled in a sophisticated updo with black hair accessories. Her expression is stern and watchful.\nFor clothing, the person wears A purple traditional robe with floral patterns. Their hairstyle is A sophisticated dark hair updo. Key accessories include Black hair accessories.\n\nPERSON_5 (An attendant or maid standing in the background.):\nA young woman with her dark hair in a simple updo, standing passively in the background. She is of slightly shorter stature and is wearing a light yellow traditional robe, similar in color to PERSON_3 but without elaborate embroidery.\nFor clothing, the person wears A light yellow traditional robe. Their hairstyle is A simple dark hair updo.\n\nPERSON_6 (Another attendant or maid standing behind the main characters.):\nA young woman with her dark hair styled similarly to PERSON_5, standing behind PERSON_4. She wears a light pink and white traditional robe.\nFor clothing, the person wears A light pink and white traditional robe. Their hairstyle is A dark hair updo.\n\nOBJECT_1 (A light green bowl used by the eunuch to feed the man in bed.):\nA small, shallow bowl of a distinctive light green jade-like color, containing some pale, lumpy food. The man feeding the incapacitated man holds it.\n\nOBJECT_2 (A pair of chopsticks used to feed the man in bed.):\nA pair of standard dark-colored wooden chopsticks held by the eunuch. They are used to pick up food from the bowl and feed it into the other man's mouth.\n\nSCENE_1 (An ornate, dimly lit interior of a traditional Chinese palace or wealthy residence.):\nThe scene is an opulent room from ancient China, featuring traditional wooden paneling. It is flanked by large, sheer, patterned yellow silk curtains that form a canopy. The room is sparsely furnished, suggesting a more personal or private chamber. The overall ambiance is warm and grand, with soft lighting from sources like candles.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 4.5s]\nThis shot is a static, eye-level medium shot.\nIn [SCENE_1], [PERSON_2] is kneeling beside a low bed where [PERSON_1] is lying down with his eyes closed. [PERSON_2] holds [OBJECT_1] and [OBJECT_2], while [PERSON_1] clutches the edge of his quilt for support. At the head of the bed, [PERSON_3] listens with a curious look. In the background, [PERSON_4], with a stern expression, and her attendants, [PERSON_5] and [PERSON_6], stand watching. [PERSON_3] begins to speak [1.1s] and then stands up straighter. [PERSON_4] steps slightly forward [2.8s], her gaze remaining fixed on the scene before her. <subtitle>这民间呐 有传闻道 蛇若要化龙<\/subtitle> appears at [1.1s-3.7s].\n"}, {"id": "sample_007", "original_id": "sample_00168", "key_points": "Motion completeness and plausibility.", "caption": "[Global Setup]\nOverall Scene: In a traditionally decorated Chinese room, a young woman approaches a table where a magical, glowing object materializes and transforms. The scene is observed by a middle-aged man, a younger man, and two other women, all dressed in historical clothing.\nGlobal Style: The video has a cinematic style, resembling a scene from a Chinese fantasy or historical drama. The visual quality is high-definition and sharp. The lighting is soft, primarily coming from natural light in the room and the magical glow of the object. The color palette is rich, with warm wood tones and colorful traditional garments. The overall pace is slow and deliberate, creating a sense of wonder and anticipation.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (The protagonist, a young woman who interacts with the magical object.):\nA young East Asian woman, appearing to be in her early twenties. She has fair skin, an oval face, and long, black hair adorned with red and green floral headpieces. Her attire is a multi-layered traditional Chinese outfit consisting of a red inner layer and flowing orange outer robes with translucent, wreath-like sleeves. Her build is slim.\nFor clothing, the person wears A multi-layered traditional Chinese outfit with red, orange, and cream colors. Their hairstyle is Long black hair, styled up and adorned with red and green floral accessories. Key accessories include Elaborate hair ornaments.\n\nPERSON_2 (A middle-aged man observing the event, likely a person of authority.):\nA middle-aged to older East Asian man, approximately 50-60 years old. He has a medium build and a round face with a gray-bristled beard and mustache. He wears a dark grey undergarment, a green patterned cape over a lighter grey robe with a strap across his chest, and a dark official's cap, indicating a position of status.\nFor clothing, the person wears A green patterned cape over layered grey and dark under-robe, with a sash, and a dark official's cap. Their hairstyle is Partially covered by a cap, with a visible beard and mustache. Key accessories include An official's cap.\n\nPERSON_3 (A man observing the event from the background.):\nA middle-aged East Asian man, appearing to be in his 40s. He has a fuller face and a short black beard and mustache. He is dressed in a white and light blue traditional outfit, and is initially seen sitting in the background before his attention is drawn to the foreground event.\nFor clothing, the person wears A white and light blue traditional robe. Their hairstyle is Short black hair, partially tied up.\n\nPERSON_4 (A woman observing the event, possibly a lady-in-waiting or a companion.):\nA young East Asian woman, appearing to be in her 20s. She has a fair complexion and long dark hair styled with simple ornaments. She wears a light pink and lavender-colored traditional outfit, suggesting a status of a lady or attendant.\nFor clothing, the person wears A pastel pink and light purple traditional robe. Their hairstyle is Long dark hair, styled with simple hairpins. Key accessories include Hairpins.\n\nPERSON_5 (A woman observing the event, possibly a lady-in-waiting or companion.):\nA young East Asian woman, appearing to be in her 20s. She has long dark hair styled in an elaborate updo with decorative hairpins. She wears a dark grey, almost black, traditional robe with subtle patterns.\nFor clothing, the person wears A dark grey traditional robe with subtle patterns. Their hairstyle is Elaborate updo with hairpins. Key accessories include Hairpins.\n\nOBJECT_1 (A small, round wooden table in the center of the room which the object materializes on.):\nA traditional, round, multi-tiered wooden table with a dark brown finish and decorative carved details on its legs and base. It has a flat surface for placing items.\n\nOBJECT_2 (A small, glowing, magical object.):\nA small, spherical or blocky object that emits a bright, flickering golden-yellow light. It appears to be made of a glowing, volatile material that creates small flames around it.\n\nOBJECT_3 (A small porcelain teapot on the table.):\nA small, traditional Chinese porcelain teapot with a light blue glaze and delicate patterns. It sits on a matching tray next to two small cups.\n\nSCENE_1 (An ornate and traditionally decorated room in a historical Chinese style.):\nA lavishly decorated interior of a historical Chinese building. The room features intricate wooden architecture, including latticed screens, carved wall panels, and a high wooden-framed ceiling. The flooring is partially covered by a large pink and green patterned rug. Furnishings include traditional round tables and stools. The background shows a curtained-off area, possibly for sleeping.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 4.6s]\nThis shot is a fixed, eye-level medium shot.\nIn [SCENE_1], [PERSON_1] stands in the center near [OBJECT_1], her hands clasped as she looks down. To her right stands [PERSON_2], and to his right, [PERSON_4]. To the far left, [PERSON_5] stands with her back mostly to the camera. In the background, [PERSON_3] is visible, sitting on a couch. A glowing [OBJECT_2] materializes on the surface of [OBJECT_1] [0.5s]. [PERSON_1] watches [OBJECT_2] intently as its light flickers. [PERSON_3] in the background shifts his posture [2.1s]. [PERSON_1] takes a step closer to the table [2.5s]. [PERSON_2] leans forward slightly to get a better look [3.2s]. [PERSON_1] raises her right hand towards the glowing [OBJECT_2] as the light intensifies [3.5s]. A faint blue flame erupts from [OBJECT_2] and then subsides, leaving the light more stable [3.8s].\n"}, {"id": "sample_008", "original_id": "sample_00203", "key_points": "Camera motion.", "caption": "[Global Setup]\nOverall Scene: In a forest, the leader of a hiking group gives instructions to his team after explaining their next route. He pulls out a walkie-talkie to organize the remaining members, while the others listen attentively.\nGlobal Style: The video is shot in a realistic, cinematic style with naturalistic lighting from an overcast sky, which creates a soft and diffused look. The color palette is dominated by earthy tones from the forest environment, with subtle pops of color from the characters' hiking clothes. The overall tone is serious and mundane, focusing on the group dynamics in an outdoor setting. The camera work is steady, using a combination of a medium shot and a stable wide shot to capture the interaction.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (The main protagonist of the group, who appears to be the designated leader, giving instructions.):\nA Caucasian male in his mid-20s with brown, short curly hair and a lean build. He has a concerned and focused expression. He is wearing a grey hooded jacket over a green shirt, with a plaid scarf tucked into the collar. He carries a large green hiking backpack with a brown water bottle attached to the front pocket.\nFor clothing, the person wears A grey hooded jacket, a green t-shirt, and a red, blue, and white plaid scarf. Their hairstyle is Short, curly brown hair. Key accessories include A green hiking backpack.\n\nPERSON_2 (A male hiker dressed in a brown jacket, standing with his arms crossed behind the main speaker.):\nA male in his 30s with a dark beard and brown hair. He has a serious and watchful expression as he leans against a tree. He is wearing a brown jacket over a plaid collared shirt and dark pants. A white-faced watch is visible on his left wrist.\nFor clothing, the person wears A brown jacket over a plaid shirt and dark pants. Their hairstyle is Short dark hair with a beard. Key accessories include A watch on his left wrist.\n\nPERSON_3 (A female hiker in an orange and blue jacket standing behind PERSON_2.):\nA female with dark, shoulder-length hair, wearing an orange and blue fleece jacket. She is looking towards the main speaker with a neutral expression.\nFor clothing, the person wears An orange and blue fleece jacket and a patterned skirt or shorts. Their hairstyle is Dark, shoulder-length hair.\n\nPERSON_4 (A female hiker in a yellow dress holding a map.):\nA female with light brown hair tied back. She is wearing a mustard-yellow corduroy dress with a dark belt. She is initially looking down at a map or something in her hands.\nFor clothing, the person wears A mustard-yellow corduroy dress with a belt. Their hairstyle is Light brown hair tied back.\n\nPERSON_5 (A female hiker with reddish hair standing in the foreground.):\nA Caucasian female in her late 20s or early 30s with reddish-brown, shoulder-length hair. She has a concerned expression. She is wearing a grey-quarter-zip fleece shirt and carries a dark blue backpack.\nFor clothing, the person wears A grey-quarter-zip fleece shirt and grey pants. Their hairstyle is Shoulder-length reddish-brown hair. Key accessories include A backpack.\n\nPERSON_6 (A male hiker standing next to PERSON_5.):\nA Caucasian male in his late 20s with medium-length brown hair and a mustache. He is wearing a brown fleece jacket and carrying a backpack.\nFor clothing, the person wears A brown fleece jacket. Their hairstyle is Medium-length brown hair. Key accessories include A backpack and multiple bracelets on his left wrist.\n\nOBJECT_1 (A black walkie-talkie-like communication device used by the leader.):\nA small, black, handheld electronic device resembling a walkie-talkie or remote control. It has an orange antenna on one side and a small screen and buttons.\n\nSCENE_1 (A dense forest trail with numerous trees and fallen leaves on the ground.):\nAn outdoor scene set in a deciduous forest. The ground is covered with layers of brown, dry leaves. Numerous trees with brown trunks and bare branches are visible. Some large rocks are interspersed within the wooded area. The lighting is diffuse and natural, as if on an overcast day.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 8.1s]\nThis shot is a a subtle pan to the left combined with a slight zoom out., eye-level medium shot.\nThe shot begins with a medium close-up on [PERSON_1] in [SCENE_1], who is speaking to someone off-screen [0.0s]. The camera pans slightly to the left and slightly zooms out [1.0s], revealing a wider group of people in the background. [PERSON_2] stands with his arms crossed, while [PERSON_3], [PERSON_4], [PERSON_5], and [PERSON_6] listen. [PERSON_4] is initially looking down, fiddling with something in her hands [2.4s]. [PERSON_1] continues speaking and turns his head to look more directly at the group [3.8s]. He pulls [OBJECT_1] out of his jacket pocket [4.1s]. He gestures with [OBJECT_1] as he begins to list names [5.2s], and he holds the device up to speak into it [6.0s]. The others, especially [PERSON_5] and [PERSON_6] in the foreground, maintain a serious and attentive expression.\n"}, {"id": "sample_009", "original_id": "sample_00211", "key_points": "The cup held by the woman in the white suit.", "caption": "[Global Setup]\nOverall Scene: In a modern room, four women have a lighthearted reunion. One woman gets a drink with a straw, and they all smile and laugh together, enjoying the moment.\nGlobal Style: The video has a reality TV or vlog style, shot with a static camera. The image quality is high-definition and sharp. The scene is brightly lit with neutral, soft lighting. The overall tone is cheerful and intimate.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (A woman in a white blazer, likely a mother, standing near a table with others.):\nA middle-aged Caucasian woman with short, styled dark brown hair. She has a fair complexion and wears full makeup, including defined eyebrows and lipstick. Her facial structure is expressive, with prominent cheekbones and a cheerful smile. She is wearing an off-white, double-breasted blazer, a gold watch on her left wrist, and multiple gold rings and bracelets.\nFor clothing, the person wears An off-white, double-breasted blazer. Their hairstyle is Short, styled dark brown hair. Key accessories include Gold watch, multiple gold rings, and bracelets.\n\nPERSON_2 (A woman with long blonde hair sitting at a table, wearing a blue top.):\nA young Caucasian woman with long, platinum blonde hair, styled straight and parted on the side. Her face is fair, with defined makeup including dark eyeliner and eyelashes. She is wearing a strapless, ribbed top that is light blue. Her fingernails are long and painted a light color.\nFor clothing, the person wears A light blue strapless top. Their hairstyle is Long, straight platinum blonde hair.\n\nPERSON_3 (A woman in a grey sweatshirt, seen on the left side of the screen.):\nA young Caucasian woman with shoulder-length light brown hair tied up in a bun. She has a fair complexion and is wearing a white or light grey hooded sweatshirt with white lettering on the chest. She is also wearing a gold chain necklace.\nFor clothing, the person wears A white or light grey hooded sweatshirt. Their hairstyle is Light brown hair in a bun. Key accessories include A gold chain necklace.\n\nPERSON_4 (A woman with short black hair, fully visible towards the end of the video.):\nA young Caucasian woman with a short, black, bob-style haircut. She has a fair complexion and is wearing a black long-sleeved shirt and a necklace. She has a warm, pleasant expression.\nFor clothing, the person wears A black long-sleeved shirt. Their hairstyle is Short black bob. Key accessories include A necklace.\n\nSCENE_1 (A modern, brightly lit room, likely a living room or lounge area, with a grand piano.):\nThe scene is a modern indoor space with light-colored walls and neutral-toned wood or stone tiles on a fireplace mantelpiece in the background. A large, glossy black grand piano is in the foreground. The setting appears to be a well-furnished, luxurious living area or lounge.\n\nOBJECT_1 (A clear glass held by PERSON_2.):\nA small, stemless drinking glass made of clear glass. It has a slightly flared shape and is used for holding a drink.\n\nOBJECT_2 (A clear glass held by PERSON_1.):\nA small, stemless drinking glass made of clear glass, identical in shape to OBJECT_1. It is used for holding a drink.\n\nOBJECT_3 (A blue handbag sitting on the table.):\nA structured, solid blue handbag with a single shoulder strap. It has a modern, architectural design.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 9.8s]\nThis shot is a static camera with a pan to the right and a tilt down at the beginning., eye-level medium shot.\nThe shot opens with a medium close-up of [PERSON_1], who is holding [OBJECT_2] and drinking from a red straw with a smile [0.5s]. The camera pans to the right and tilts down to show [PERSON_2] sitting at a table, drinking from [OBJECT_1] with a blue straw [1.5s]. She takes a smile after a sip [2.5s], then lowers her head and laughs [3.5s]. [PERSON_1] is now standing to the left of the frame, smiling at [PERSON_2]. [PERSON_3] enters the frame from the left, holding a glass with a purple straw [7.8s], followed by [PERSON_4] who also holds a glass with a green straw [8.0s]. All four women are now visible: [PERSON_4], [PERSON_3], [PERSON_1], and [PERSON_2], standing or sitting around a piano. [PERSON_2] is still laughing. [PERSON_1] tells her to make a noise, and the other women laugh along with [1.1s]. [PERSON_3] and [PERSON_4] also drink from their straws. [SCENE_1] is visible throughout, with a small blue handbag, [OBJECT_3], sitting on the table in front of [PERSON_2].\n"}, {"id": "sample_010", "original_id": "sample_00220", "key_points": "Person count and spatial arrangement.", "caption": "[Global Setup]\nOverall Scene: A group of students from Kirkwood School, dressed in their maroon uniforms, are practicing a vocal piece outdoors under the guidance of their teacher. They practice with serious expressions, gradually transitioning to happy, joyful smiles as they sing together.\nGlobal Style: This is a cinematic, live-action video. It employs a warm color palette and high-contrast lighting, with strong, natural backlighting describing the scene. The overall tone is positive and heartwarming, captured with a sharp, high-definition quality and a steady, slow-paced rhythm.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (The choir director conducting the students from behind.):\nA person with short, dark hair tied back, seen only from the back. They are wearing a maroon blazer over a white collared shirt, matching the students' uniform. A small lavalier microphone is clipped to their collar.\nFor clothing, the person wears A maroon blazer, a white collared shirt, with a matching tie. Their hairstyle is Short, dark hair tied back. Key accessories include A lavalier microphone.\n\nPERSON_2 (A young female student in the middle of the first row, actively singing.):\nA young Caucasian woman, approximately 17-21 years old, with shoulder-length wavy brown hair featuring bangs. She has a fair complexion, defined facial features, and is wearing red lipstick. Her expression is initially concentrated while singing, later changing to a wide smile.\nFor clothing, the person wears A maroon blazer, a white collared shirt, and a maroon and navy blue striped tie. Their hairstyle is Shoulder-length wavy brown hair with bangs. Key accessories include Small gold hoop earrings.\n\nPERSON_3 (A young female student in the first row, to the left of the director.):\nA young female student, appearing to be of South Asian descent, around 17-21 years old. She has long, wavy dark hair and wears eyeglasses. Her expression is very animated, shifting from a serious singing look to a broad, happy smile.\nFor clothing, the person wears A maroon blazer, a white collared shirt, and a maroon and navy blue striped tie. Their hairstyle is Long, wavy dark hair. Key accessories include Eyeglasses, a small necklace.\n\nPERSON_4 (A young female student in the front row, to the right of the director.):\nA young Caucasian woman, approximately 17-21 years old, with blonde, shoulder-length hair. She has a fair complexion and her facial expression transitions from focused singing to bright, joyful smiling.\nFor clothing, the person wears A maroon blazer, a white collared shirt, and a maroon and navy blue striped tie. Their hairstyle is Shoulder-length blonde hair.\n\nPERSON_5 (A young male student in the middle of the second row.):\nA young male student, appearing to be of mixed descent, around 17-21 years old. He has short, curly dark hair. He maintains a focused, stern-looking expression throughout the video as he sings.\nFor clothing, the person wears A maroon blazer, a white collared shirt, and a maroon and navy blue striped tie. Their hairstyle is Short, curly dark hair.\n\nPERSON_6 (A young female student in the front row, on the far left.):\nA young Caucasian woman with wavy, shoulder-length blonde hair with bangs. She wears a focused expression while singing, with her mouth open.\nFor clothing, the person wears A maroon blazer, a white collared shirt, and a maroon and navy blue striped tie. Their hairstyle is Wavy blonde hair with bangs.\n\nPERSON_7 (The male teacher listening to the choir.):\nAn older, heavyset man, appearing to be of Ukrainian or Eastern European descent, around 50-60 years old. He has short, dark hair. He stands at the back with a slight frown, observing the choir's performance.\nFor clothing, the person wears A maroon blazer, a white collared shirt, and a maroon and navy blue striped tie. Their hairstyle is Short, dark hair.\n\nSCENE_1 (An outdoor area in front of a building, likely a school, where a choir is practicing.):\nAn outdoor location on a sunny day. The background consists of a large building with a grand staircase featuring ornate black railings. Bare tree branches are visible, suggesting it's late autumn or winter. The scene is bathed in warm, bright sunlight.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 2.7s]\nThis shot is a static, eye-level medium shot.\nIn a medium shot set in [SCENE_1], a choir of students leads by [PERSON_2] and [PERSON_4] sings while facing away from the camera towards [PERSON_1], who is seen from the back conducting. The choir members, including [PERSON_3], [PERSON_5], and [PERSON_6], have focused expressions with their mouths open as they sing [0.0s]. In the background, [PERSON_7] stands with a discontented expression. The light is warm and backlit, coming from the right, creating a lens flare effect. At [1.2s], the students' expressions break into broad smiles as they continue singing, and they continue smiling happily for the remainder of the shot [2.3s].\n"}, {"id": "sample_011", "original_id": "sample_00275", "key_points": "Character traits — no children.", "caption": "[Global Setup]\nOverall Scene: A comedic scene where a family in a moving yellow car encounters two frantic air blasts on their windshield that resemble hands scurrying away, prompting their alarmed reactions.\nGlobal Style: A realistic, cinematic style with a comedic tone. The scene is shot in bright, natural daylight, creating a slightly overexposed and hazy look. The camera is static, creating a fixed point of view. The color palette is dominated by the yellow of the car and the bright, washed-out exterior. The pacing is quick and punctuated by sudden, surprising events.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (The young man sitting in the front passenger seat, who appears to be the source of the windshield issue.):\nA young Asian man, approximately in his early 20s. He has short, dark, somewhat messy hair. His facial expression is initially focused, but quickly shifts to shock and confusion. He is wearing a yellow and blue plaid button-up shirt over a white t-shirt.\nFor clothing, the person wears A yellow and blue plaid shirt over a white t-shirt. Their hairstyle is Short, dark, messy hair.\n\nPERSON_2 (The older man driving the car, who is presumably the 'brother-in-law' mentioned in the dialogue.):\nA middle-aged to older Asian man, likely in his 50s. He has short, dark, slightly unkempt hair. He wears a short-sleeved, light-colored shirt. His expression changes from neutral to shocked as he looks forward.\nFor clothing, the person wears A short-sleeved, light-colored shirt. Their hairstyle is Short, dark, unkempt hair.\n\nPERSON_3 (A young woman sitting in the middle of the front and back seats, observing the commotion.):\nA young Asian woman, appearing to be in her 20s, with long dark hair. She is wearing a white top. She maintains a calm and observant expression throughout the scene.\nFor clothing, the person wears A white top. Their hairstyle is Long dark hair.\n\nPERSON_4 (An older woman sitting in the back seat, reacting with alarm.):\nAn older Asian woman, likely in her 60s, with short, dark hair. She is wearing a brown or reddish-brown patterned blouse. She has a very expressive, alarmed face, with her mouth open in shock.\nFor clothing, the person wears A brown or reddish-brown patterned blouse. Their hairstyle is Short, dark hair.\n\nOBJECT_1 (The yellow car that the family is riding in.):\nA bright yellow car, likely a small van or SUV. The shot is framed through its front windshield, which has a slight greenish tint on the wipers. The interior has beige seats.\n\nOBJECT_2 (The abstract white shapes on the windshield that resemble hands.):\nTwo amorphous, fluffy, or crystalline formations of white residue that intermittently appear on the car's front windshield. They spread out and retract, visually resembling hands making gestures or being alarmed.\n\nOBJECT_3 (A small t-shirt being dried on the car's windshield.):\nA small, light-colored or white t-shirt, possibly for a child, that is stuck to the windshield by an unseen mechanism, presumably drying as it is transported.\n\nSCENE_1 (The interior of the moving car on a road during the daytime.):\nThe scene is viewed from a low angle, positioned in front of [OBJECT_1] looking through its windshield into the car's cabin. The dashboard and hood of the car are visible in the foreground, tinted green by the glass. The interior has beige upholstery. Through the windows, a bright, blurry landscape of trees and foliage is visible, indicating the car is moving on a road surrounded by nature.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 8.2s]\nThis shot is a static, eye-level medium shot.\nIn [SCENE_1], viewed from outside [OBJECT_1], [PERSON_2] is driving with a neutral expression, while [PERSON_1], [PERSON_3], and [PERSON_4] sit in the front and back seats. [PERSON_2] speaks, and [PERSON_1] looks down. A greenish tint is visible on the windshield, and the view is slightly hazy. A bright flash of light passes by the car [0.9s]. The scene is still and tense. Two white, fluffy, hand-like shapes emerge and spread across the windshield, startling the occupants [3.8s]. They quickly retract [4.8s]. [PERSON_1] turns his head with a shocked expression and asks a question [5.3s]. [OBJECT_3], a small t-shirt, appears stuck to the windshield, covered in a similar white residue [6.1s]. While [OBJECT_3] remains on the windshield, [PERSON_3] calmly tells '[PERSON_2]' to use the wipers [6.7s]. The white shapes spread again briefly [7.2s] before retracting. The second appearance of the white hand shapes near the shirt is linked with the sound effect as [OBJECT_3] is on screen. The entire duration the two white shapes are on screen, except for one brief moment, they are conjoined and spread out across the windshield forming two rough identical hands. <subtitle>你给我拍回去<\/subtitle> appears at [0.0s-1.0s], followed by <subtitle>Slap it again.<\/subtitle>, followed by <subtitle>怎么回事<\/subtitle> at [5.3s-5.8s], followed by <subtitle>What's happening?<\/subtitle>, followed by <subtitle>姐夫 你开雨刷器啊<\/subtitle> at [6.5s-7.8s], followed by <subtitle>Brother, turn on the windshield wipers.<\/subtitle>.\n"}, {"id": "sample_012", "original_id": "sample_00359", "key_points": "Entity count.", "caption": "[Global Setup]\nOverall Scene: This is a still group photograph of thirteen people, including staff and an elderly woman, posing together inside what appears to be a small restaurant or food stall. They are all smiling, waving, and posing for the camera in a cheerful and warm atmosphere for a 'family photo' titled '2024 Family Photo' with text overlays.\nGlobal Style: The video presents what appears to be a single, continuous still photograph with a very slow zoom-out effect. The visual style is realistic and documentary-like, capturing a candid moment. The color palette is natural, with white walls, a green floor, and varied clothing colors. The lighting is bright and functional, likely from overhead fluorescent lights. The overall tone is heartwarming, joyful, and communal.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (A woman in the front row on the left.):\nAn Asian woman, appearing to be in her 40s or 50s. She has short, dark brown bobbed hair. She is wearing a red short-sleeved top over a reddish-orange one, with beige pants. Her expression is a wide, happy smile. She is shown with her mouth open in a 'V' shape as if singing or cheering.\nFor clothing, the person wears A red short-sleeved top and beige pants. Their hairstyle is Short, dark brown bobbed hair.\n\nPERSON_2 (A woman in the front row, standing next to the woman in red.):\nAn Asian woman, appearing to be in her 50s or 60s. She has short, dark brown hair. She is wearing a grey short-sleeved shirt with a small floral pattern and dark pants. Her expression is a wide, joyful smile, and she waves her right hand.\nFor clothing, the person wears A grey patterned short-sleeved shirt and dark pants. Their hairstyle is Short, dark brown hair.\n\nPERSON_3 (An elderly woman seated in the front row center.):\nA very elderly Asian woman, likely over 80 years old. She has short, grey hair and a wrinkled face with kind eyes. She is dressed in a short-sleeved blouse with a purple and white floral pattern and dark pants. She gives a gentle thumb's-up with her right hand while smiling.\nFor clothing, the person wears A purple and white patterned short-sleeved blouse. Their hairstyle is Short grey hair.\n\nPERSON_4 (A man in a yellow polo shirt seated on the front right.):\nAn Asian man in his 50s with short dark hair. He is wearing a bright yellow short-sleeved polo shirt with a small, round circular logo on the left chest, and dark shorts. He gives a thumbs-up with his right hand and waves with his left hand while smiling.\nFor clothing, the person wears A yellow polo shirt and dark shorts. Their hairstyle is Short dark hair.\n\nPERSON_5 (A man in a yellow polo shirt seated in the foreground right.):\nA younger Asian man, likely in his 20s or 30s. He has short black hair and a round face. He is wearing a bright yellow short-sleeved polo shirt with a small, round circular logo on the left chest. He smiles and waves his right hand.\nFor clothing, the person wears A yellow polo shirt with dark shorts. Their hairstyle is Short black hair.\n\nPERSON_6 (A man in a red t-shirt standing in the back row center.):\nAn Asian man, likely in his 50s, with a bright smile. He is wearing a red short-sleeved t-shirt featuring a large cartoon character (Mickey Mouse) on the front. He is also wearing a light grey baseball cap. He enthusiastically waves with his right hand.\nFor clothing, the person wears A red t-shirt with a Mickey Mouse graphic. Their hairstyle is Covered by a cap. Key accessories include A grey baseball cap.\n\nPERSON_7 (A man in a green polo shirt standing on the far left.):\nAn Asian man in his 30s or 40s. He is wearing a light green polo shirt and small blue latex gloves. He smiles and waves with both hands.\nFor clothing, the person wears A green polo shirt. Their hairstyle is Short black hair. Key accessories include A blue latex glove on his right hand.\n\nSCENE_1 (The interior of a small food stall or restaurant.):\nThe interior of a small, bustling Asian food stall or restaurant. The space has white tiled walls, an industrial green floor, and exposed ceiling pipes. A long service counter extends on the left. The background features a glass display cabinet filled with figurines, likely for a deity, under a ceiling fan. Red Chinese decorations with golden characters are hung on the walls. On the far right, a large commercial stainless steel refrigerator stands. The lighting is from functional, overhead fluorescent lights.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 4.6s]\nThis shot is a static, eye-level medium long shot.\nIn [SCENE_1], a static group photograph shows thirteen people posing happily for the camera. [PERSON_1], [PERSON_2], [PERSON_3], [PERSON_4], and [PERSON_5] are seated in the front row, while [PERSON_6], [PERSON_7], and eight other men and women are standing behind them. Most individuals are smiling and some wave. [PERSON_4], seated in the front, lowers his right hand and raises his right thumb to give a thumbs-up [4.1s]. Another man in the middle-row wears a baseball cap with 'NYC' printed on it. The scene is overlaid with white Chinese text on the left side, \"♪ 永不因风吹散了热爱\", and on the right side, \"2024年全家福\".\n"}, {"id": "sample_013", "original_id": "sample_00366", "key_points": "Entity count.", "caption": "[Global Setup]\nOverall Scene: A short, silent video showing a group of elderly East Asian men and women, dressed in white ceremonial robes, participating in a traditional ritual outdoors. They are gathered at a table with an array of memorial offerings, including fruits. One man uses chopsticks to carefully handle an onion as part of the ceremony, while another man leads a ritual involving a ritual staff and a burning paper effigy.\nGlobal Style: The video is shot in a realistic, documentary style with high-definition, clear image quality. The overall color palette is dominated by the white of the staffs and raiment, creating a strong contrast with the deep blue background. The lighting is bright and even, likely natural daylight, which allows for sharp detail and consistent illumination. The overall tone is serious and ceremonial, with the action centered on a single static medium shot.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (An elderly elderly man who is the central figure on the right, actively conducting a ritual.):\nAn elderly East Asian man, likely in his 60s or 70s, with a weathered complexion and a possible goatee. He has a shaved head and is wearing a white, flat-topped chef-style hat. His attire consists of a white, long-sleeved, collared tunic secured with a light beige sash across his waist. His expression is focused and serious as he conducts the ceremony.\nFor clothing, the person wears A white, long-sleeved tunic and a white chef-style hat. Their hairstyle is Shaved head. Key accessories include A light beige sash.\n\nPERSON_2 (An elderly elderly woman kneeling on the left side of the ritual table, observing the ceremony.):\nAn elderly East Asian woman, likely in her 70s, with dark hair tied back. She wears a white, supersaiyan-style chef hat, a white collared tunic, and a thick black-and-white patterned scarf around her neck. Her facial hair is sparse. She is kneeling and looking attentively at the ongoing ritual.\nFor clothing, the person wears A white, long-sleeved tunic, a white chef-style hat, and a black-and-white patterned scarf. Their hairstyle is Dark hair, tied back. Key accessories include A black-and-white patterned scarf, small earrings.\n\nPERSON_3 (A woman standing in the center background, participating in the ceremony.):\nA middle-aged East Asian woman, likely in her 50s, with short dark hair. She is wearing a white collared tunic and a white cloth wrapped around her head like a turban. She stands with a composed expression while observing the ritual.\nFor clothing, the person wears A white, long-sleeved tunic. Their hairstyle is Short dark hair. Key accessories include A white cloth tied around her head.\n\nPERSON_4 (An elderly man standing in the center, between PERSON_2 and the ritual table.):\nAn elderly East Asian man, likely in his 60s, seen in profile in the center background. He is wearing a white, long-sleeved tunic and a white, flat-topped chef-style hat, similar in style to that of PERSON_1.\nFor clothing, the person wears A white, long-sleeved tunic and a white chef-style hat. Their hairstyle is Shaved head.\n\nOBJECT_1 (A large table covered in ritual food offerings.):\nA long table covered with a blue cloth and laden with various food items for a ritual. The offerings include peeled bananas, whole apples, red and green oranges, grapefruits, cakes, and sweet potatoes. A large red onion is also placed on a large stalk of what appears to be a vegetable stalk.\n\nOBJECT_2 (A pair of wooden chopsticks used for handling ritual items.):\nA standard pair of light-colored wooden chopsticks, used for pointing and picking up items during the ritual.\n\nOBJECT_3 (A sacred object or ritual staff used in the ceremony, wrapped in golden objects.):\nA staff-like object, possibly a wooden branch or an incense burner, wrapped in gold-colored paper or gilded items. It is a central part of the ceremony.\n\nSCENE_1 (An outdoor setting for a Chinese religious or traditional ceremony.):\nAn outdoor or open-air setting for a ceremony, set against a large, ornate backdrop. The backdrop is dark blue and features large white calligraphy, decorative carvings at the top, and vertical patterns. A yellow sunflower prop with a sad face on it is visible on the right.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 3.4s]\nThis shot is a static, eye-level medium shot.\nIn [SCENE_1], the camera holds a medium shot of a small group of people. [PERSON_2] is kneeling on the left, looking down at [OBJECT_1]. On the right, [PERSON_1] holds [OBJECT_2] and uses the tips to pull a large red onion from the fruit on the table [0.4s]. He then carefully picks up the onion with [OBJECT_2] and moves towards the center [1.1s], extending his arm to insert the onion onto [OBJECT_3], a staff-like object in a black pot. As he performs this action, the subtitle <subtitle>建中哥和姐妹们<\/subtitle> appears at the bottom of the screen [2.5s]. Throughout, [PERSON_3] and [PERSON_4] stand in the background, observing the ritual with solemn expressions.\n"}, {"id": "sample_014", "original_id": "sample_00371", "key_points": "The person bound by chains.", "caption": "[Global Setup]\nOverall Scene: In a Litchi orchard, a tense confrontation unfolds. A group of distressed men in rustic clothing stand together, listening as an off-screen male voice threatens them, questioning if they still want to eat litchis, while another man chains to a tree looks on.\nGlobal Style: The video has a realistic, cinematic style, characteristic of a historical drama. The image quality is high-definition and sharp. It is shot in a natural outdoor setting, with bright, dappled sunlight filtering through the lush green foliage of a litchi orchard. The color palette is natural and rich, dominated by greens and earth tones. The overall tone is tense and dramatic, conveyed through the characters' expressions and the confrontational atmosphere.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (An authoritative figure, possibly an official or soldier, seen from the back, who is addressing the group of men.):\nA man seen only from the back. He has black hair tied up in a topknot and is wearing a dark, traditional-style robe. He appears to be the leader of the confrontation.\nFor clothing, the person wears A dark, traditional robe. Their hairstyle is Black hair in a topknot.\n\nPERSON_2 (A man standing in the center of the group, appearing to be begging or pleading.):\nAn East Asian man, appearing to be in his 30s. He has black hair tied in a topknot. His face is expressive, showing a mix of pleading and desperation. He is wearing a dark, sleeveless tunic with a rough texture, cinched at the waist with a frayed rope belt.\nFor clothing, the person wears A dark, sleeveless tunic with a frayed rope belt. Their hairstyle is Black hair in a topknot.\n\nPERSON_3 (A man on the far right who looks surprised and shocked.):\nAn East Asian man, appearing to be in his 30s or 40s. He has messy black hair partially tied up. He is wearing a light blue, loose-fitting robe with a dark waistband. His expression is one of wide-eyed shock.\nFor clothing, the person wears A light blue, loose-fitting robe with a dark waistband. Their hairstyle is Messy black hair, partially tied up.\n\nPERSON_4 (A man with a weary expression, looking at the man he is standing with.):\nAn East Asian man, appearing to be in his 40s, with weathered skin and a mustache. His black hair is styled in a traditional topknot. He has a dark, distressed expression. He wears a dark robe with a loosely tied sash.\nFor clothing, the person wears A dark robe with a loosely tied sash. Their hairstyle is Black hair in a topknot.\n\nPERSON_5 (A man with strange hair standing at the back of the group with his mouth open.):\nAn East Asian man, appearing to be in his 30s or 40s. He has a unique hairstyle with his hair tied up and several strands hanging loose. His face shows an expression of shock or disbelief with his mouth agape. He is wearing a dark tunic.\nFor clothing, the person wears A dark tunic. Their hairstyle is A topknot with some strands loose.\n\nPERSON_6 (A man appearing worried, standing next to the man with the topknot.):\nAn East Asian man, appearing to be in his 30s, with a worried expression. He is wearing a blue headband or scarf around his forehead. He has on a dark robe with the right shoulder strap undone, and a woven basket is strapped to his back.\nFor clothing, the person wears A dark robe with an undone shoulder strap and a basket on his back. Their hairstyle is Hair tied in a topknot. Key accessories include A blue headband.\n\nPERSON_7 (A man chained to a tree on the right, listening to the confrontation.):\nAn East Asian man, seen from the back and side, who is manacled to a tree branch. He is wearing a full, light blue robe with a narrow black belt around his waist. His hair appears to be in a single topknot.\nFor clothing, the person wears A light blue robe with a narrow black belt. Their hairstyle is Hair in a single topknot. Key accessories include Manacles on his wrists.\n\nSCENE_1 (A lush litchi orchard under a canopy of trees during bright daylight.):\nA dense outdoor orchard, specifically a litchi grove, characterized by thick, leafy green trees. Sunlight filters through the foliage, creating patches of light and shadow on the ground. Red litchi fruit can be seen hanging from the branches.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 3.1s]\nThis shot is a fixed shot, eye-level medium shot.\nIn [SCENE_1], a group of men are gathered under trees. In the foreground, [PERSON_1] is seen from the back. To the right, [PERSON_7] is chained by his wrists to a tree branch. The central group of men, including [PERSON_2], [PERSON_3], [PERSON_4], [PERSON_5], and [PERSON_6], all stare towards [PERSON_1] with pained, shocked, and pleading expressions as they listen to an off-screen speaker. [PERSON_2] holds his open hands forward slightly in a pleading gesture. The lighting is natural daylight filtering through the tree canopy. [PERSON_3] turns his head slightly more to the left [1.3s]. The characters remain mostly static as they endure the confrontation.\n"}, {"id": "sample_015", "original_id": "sample_00384", "key_points": "Motion plausibility.", "caption": "[Global Setup]\nOverall Scene: In an outdoor field, a team of seven people, including several in orange, red, and gray suits, are on alert. Following a report, the leader gives an order for the 'UPG' unit to begin acting, and the three heroes summon their transformation devices and run off-screen while shouting.\nGlobal Style: This is a live-action, high-definition action scene, characteristic of a Japanese Tokusatsu series. The shot is captured from a high-angle, fixed camera. The lighting is bright, natural daylight, creating a realistic feel. The color palette is natural, with the vibrant red and orange of the team's costumes providing a strong contrast to the dirt and green grass of the field. The pace is fast and urgent, building tension.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (The leader of the team, who gives the initial order.):\nAn Asian male, appearing to be in his late 20s or early 30s. He has short, neat black hair. He is wearing a brightly colored suit consisting of a red collared shirt, an orange and gray jacket with white and black accents, and black pants. On his left bicep, there is a patch with the letters 'UPG'.\nFor clothing, the person wears An orange, gray, white, and black tactical suit with 'UPG' on the left arm. Their hairstyle is Short, neat black hair. Key accessories include A device on his right wrist.\n\nPERSON_2 (A young man in a black coat standing next to the leader.):\nA young Asian male, likely in his late teens or early 20s. He has black hair styled with a fringe across his forehead. He is dressed entirely in black, wearing a coat over a collared shirt, which is under a blue turtleneck sweater.\nFor clothing, the person wears A black coat, a dark shirt with a blue turtleneck underneath. Their hairstyle is Black hair with a fringe.\n\nPERSON_3 (A young man in a grey coat, standing behind the leader.):\nA young Asian male in his 20s with short black hair. He wears a grey open jacket over a red collared shirt and matching black pants. His name 'HIPPO' is visible on the jacket. He has a concerned expression.\nFor clothing, the person wears A grey jacket over a red shirt, with black pants. Their hairstyle is Short black hair.\n\nPERSON_4 (An Asian young woman in a similar suit to the heroes.):\nAn Asian female in her 20s with long, dark brown hair. She is wearing a suit similar to the male heroes, with orange, gray, white, and black colors. Her expression is alarmed.\nFor clothing, the person wears An orange, gray, white, and black tactical suit. Their hairstyle is Long, dark brown hair.\n\nPERSON_5 (A man with a stern appearance standing behind PERSON_3 and PERSON_4.):\nA man in his late 20s or early 30s with a short, faded haircut. He has a serious expression and is wearing a dark reddish-brown tunic over a dark shirt and vest.\nFor clothing, the person wears A dark reddish-brown tunic, vest, and dark shirt. Their hairstyle is Short, faded haircut.\n\nPERSON_6 (A young man in a unique, more flamboyant suit.):\nA young Asian male in his 20s with medium-length brown hair. He wears a black turtleneck under a more stylized orange, gray, and white jacket. His pants are black, and he carries a distinctive belt buckle that resembles a grinning face.\nFor clothing, the person wears An orange, gray, white, and black jacket with a wide collar, a black turtleneck, and black pants. Their hairstyle is Medium-length brown hair. Key accessories include A uniquely designed belt buckle.\n\nOBJECT_1 (The transformation and summoning device, known as the 'DekaArrow'.):\nA handheld, silver-colored device resembling a wrench or a tool for transformation. It has a thicker top section where an arrowhead-shaped piece can be inserted, and a long, wand-like shaft.\n\nSCENE_1 (An outdoor field with dirt ground and some grass, acting as a staging area.):\nAn open dirt and gravel lot adjacent to a grassy area. In the background, several orange traffic cones are placed in a line, and black and yellow warning tape is strung between markers, suggesting a restricted area or accident scene.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 8.4s]\nThis shot is a fixed, high-angle medium shot.\n\n"}, {"id": "sample_016", "original_id": "sample_00631", "key_points": "Entity count.", "caption": "[Global Setup]\nOverall Scene: In a domestic setting, a woman firmly tells a man to wait as he tries to leave, creating a tense confrontation with other people present in the room.\nGlobal Style: The video is shot in a realistic, dramatic style with stable, clear, high-definition quality. The camera work is simple, primarily using a static medium shot. The color palette is natural, dominated by neutral tones from the walls and clothing, with the character's outfits providing color accents. The lighting is bright and functional. The overall tone shifts from a seemingly dismissive beginning to a tense, unresolved climax.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (A woman who stands in the center of the room and confronts a man.):\nAn East Asian woman, appearing to be in her 30s. She has long, dark hair tied up in a bun with a red flower accessory on the side. She has a fair complexion and wears prominent red lipstick. She is dressed in a long, dark blue floral print dress with a black long-sleeved undershirt, and black high-heeled shoes.\nFor clothing, the person wears A long blue floral print dress over a black long-sleeved shirt, and black high heels. Their hairstyle is Dark hair pulled back into a bun with a red flower accessory. Key accessories include Gold-colored hoop earrings and a red flower hairpiece.\n\nPERSON_2 (A woman standing to the left of the central character, smiling.):\nAn East Asian woman, likely in her 30s, with long, wavy dark hair. She has a slender build and is wearing a reddish-orange, form-fitting long-sleeved top, a black mini skirt, and black stockings or tights with black high heels. She is smiling throughout the scene.\nFor clothing, the person wears A reddish-orange long-sleeved top and a black mini skirt with black stockings. Their hairstyle is Long, wavy dark hair parted to the side.\n\nPERSON_3 (A man who is confronted by PERSON_1 and tries to leave.):\nAn East Asian man, appearing to be in his 30s. He has short, black hair and a medium build. He is wearing a light blue plaid button-down shirt and dark trousers. He carries a small black handbag over his shoulder.\nFor clothing, the person wears A light blue plaid button-down shirt and dark trousers. Their hairstyle is Short black hair.\n\nPERSON_4 (A woman in a uniform who appears at the end of the confrontation.):\nAn East Asian woman, likely in her 20s or 30s, with shorter brown hair. She is wearing a light blue, short-sleeved uniform-style shirt and dark trousers, with a black bag or strap over her shoulder.\nFor clothing, the person wears A light blue short-sleeved shirt and dark trousers. Their hairstyle is Short brown hair. Key accessories include A black bag or strap.\n\nPERSON_5 (A young man standing in the doorway in the background.):\nA young East Asian man, likely in his 20s, with dark, somewhat longer hair and bangs. He is wearing a grey denim-style jacket over a darker shirt. He appears with his hands in his pockets, observing the scene.\nFor clothing, the person wears A grey jacket over a darker shirt. Their hairstyle is Messy dark hair with bangs.\n\nPERSON_6 (A man standing next to the young man in the doorway.):\nA young East Asian man, possibly of a Southeast Asian descent. He has dark hair and is wearing a black hoodie. He is shorter than the man next to him and stands with his hands clasped in front.\nFor clothing, the person wears A black hoodie. Their hairstyle is Short dark hair.\n\nOBJECT_1 (A black handbag carried by PERSON_3.):\nA small, simple black handbag with a single shoulder strap, carried by PERSON_3.\n\nSCENE_1 (An indoor room with tiled floors and white walls, appearing to be a living area.):\nAn indoor space, likely a living room, with a light-colored, possibly tiled, floor and plain white walls. In the background, there is a large, dark brown wooden cabinet or wardrobe with its doors open. The lighting is ambient and functional, coming from an unseen source.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 3.2s]\nThis shot is a static, eye-level medium shot.\nThe scene opens in [SCENE_1] with a medium shot of [PERSON_1] and [PERSON_2]. [PERSON_1] is in the center, looking down with a slight smile, while [PERSON_2] stands to her left, looking at [PERSON_1] and smiling with her mouth open [0.5s]. In the background, [PERSON_5] and [PERSON_6] are standing in a doorway. A subtitle <subtitle>慢走啊慢走<\/subtitle> is at the bottom of the screen. [PERSON_3], seen from the back, walks into the frame from the right and stops in front of the women [0.9s]. [PERSON_1] looks up towards [PERSON_3] and begins to speak [1.2s]. The subtitle changes to <subtitle>等会<\/subtitle> [1.5s]. [PERSON_1] puts on a serious expression [1.5s]. [PERSON_4] walks into the frame from the right side, standing behind [PERSON_3] [1.8s]. The four main characters now face each other in a tense standoff. [PERSON_3] turns his head to look at [PERSON_4] [2.3s], then turns back to face the front [2.5s]. Everyone is now part of a group confrontation.\n"}, {"id": "sample_017", "original_id": "sample_00648", "key_points": "Motion plausibility.", "caption": "[Global Setup]\nOverall Scene: A group of young actors and crew members run playfully down a brightly lit, modern hospital corridor, suggesting a fast-paced, behind-the-scenes moment from a production.\nGlobal Style: The video has a realistic, behind-the-scenes aesthetic, filmed in a single, continuous take. The setting is a modern, brightly-lit hospital corridor, characterized by its clean aesthetic with light blue walls, shiny white floors, and rows of blue waiting chairs. The camera shot is captured from a tilted angle, creating a dynamic, low-angle perspective that follows the action. The overall tone is energetic, joyful, and fast-paced.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (A male actor/optimizer who is participating in the run-and-chase sequence.):\nA young Asian male in his late teens or early twenties with a slender build. He has dark, neatly styled wavy hair. He is wearing a white short-sleeved button-up shirt with the top button undone, over a dark t-shirt, paired with light-wash blue jeans and white sneakers. A pair of orange-tinted sunglasses is tucked into the collar of his shirt.\nFor clothing, the person wears White short-sleeve button-up shirt, dark t-shirt, and light-wash blue jeans. Their hairstyle is Short dark wavy hair. Key accessories include Orange-tinted sunglasses tucked into his shirt collar.\n\nPERSON_2 (The lead male actor in the run-and-chase sequence, appearing to be 'chased' by others.):\nA young Asian male in his late teens or early twenties with a slim build. He has dark hair, combed back. He is dressed in a black three-quarter sleeve shirt, dark trousers, and white sneakers. He wears a lanyard with an ID badge around his neck.\nFor clothing, the person wears Black three-quarter sleeve shirt and dark trousers. Their hairstyle is Short, dark, combed-back hair. Key accessories include A lanyard with an ID badge.\n\nPERSON_3 (A female crew member running after the lead actor.):\nA young Asian female in her late teens or early twenties with a slender build and long black hair. She is wearing a grey jacket over a dark top, a white pleated skirt, and white sneakers. She has a lanyard with an ID badge around her neck.\nFor clothing, the person wears Grey jacket, dark top, and a white pleated skirt. Their hairstyle is Long black hair. Key accessories include A lanyard with an ID badge and a small white handbag.\n\nPERSON_4 (A female crew member in the foreground of the running group.):\nA young Asian female in her late teens or early twenties with long black hair. She is wearing a white long-sleeved blouse, a black skirt, and white sneakers. She has a lanyard with an ID badge around her neck.\nFor clothing, the person wears White long-sleeved blouse and a black skirt. Their hairstyle is Long black hair. Key accessories include A lanyard with an ID badge and a small white handbag.\n\nPERSON_5 (A male crew member filming with a camera.):\nA young Asian male in his late teens or early twenties with a slim build. He is wearing a black t-shirt, black trousers, and white sneakers. He has a lanyard with an ID badge around his neck.\nFor clothing, the person wears Black t-shirt and black trousers. Their hairstyle is Short dark hair. Key accessories include A lanyard with an ID badge.\n\nOBJECT_1 (A professional video camera being used for filming.):\nA professional handheld video camera, black in color. It is equipped with a large lens and a built-in top handle for stability. The camera is carried and operated by a crew member.\n\nOBJECT_2 (A professional still camera being used by the crew.):\nA professional digital single-lens reflex (DSLR) camera with a large telephoto lens. It is black with a white ring around the base of the lens. The photographer wears a camera strap around their neck.\n\nSCENE_1 (A modern, brightly lit hospital or clinic corridor.):\nA clean, modern corridor with light blue walls, a shiny white tiled floor, and recessed ceiling lights. On the left side, there are several blue metal waiting chairs lined up against the wall. Some white and blue informational posters are visible on the walls. In the background, there are doorways with turquoise frames and an elevator with one door open.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 3.2s]\nThis shot is a handheld tracking shot with a significant tilt and shaky motion, low angle medium long shot.\nIn [SCENE_1], [PERSON_1] stands on the left side of the corridor, while a group of actors and crew members run from the background down the hall towards the camera in a playful chase [0.0s]. The group includes [PERSON_1] on the left, with [PERSON_2] in the center leading the run, followed by [PERSON_3], and [PERSON_4]. Two prominent crew members are part of the group, one operating [OBJECT_1] [0.0s] and another holding [OBJECT_2] [0.0s]. The camera, held at a low, tilted angle and attached to a gimbal stabilizer, follows their movement, causing strong motion blur as they run past the camera [1.5s]. The camera pans down to the floor during the motion blur [2.1s]. After the group passes, [PERSON_5] is visible in the shallow background, starting to run toward the camera with [OBJECT_2]. In the far background, [PERSON_1] remains standing.\n"}, {"id": "sample_018", "original_id": "sample_00665", "key_points": "Spatial arrangement of the people.", "caption": "[Global Setup]\nOverall Scene: In a futuristic lounge, a man holding a wine glass urges someone off-screen to come to him, then gets up and walks off. Another woman approaches the group to join them.\nGlobal Style: The video has a modern, cinematic style with a distinct, stylized aesthetic. It features a cool color palette dominated by blues and metallic tones, creating a sci-fi or high-end lounge atmosphere. The setting is characterized by clean lines, reflective surfaces, and ambient neon lighting from LED panels. The quality is high-definition and sharp, with a slow, observational pace. The lighting is artificial and atmospheric, with a strong emphasis on cool hues.\n\n\n[Cast & Setting Introduction]\n\nPERSON_1 (A man in a black suit who initiates the interaction by asking someone to come over.):\nAn East Asian man, likely in his 20s or 30s, with short, dark, neatly styled hair. He has a fair complexion and sharp facial features. He is wearing a modern outfit consisting of a black long-sleeved shirt, black trousers, and black shoes.\nFor clothing, the person wears A black long-sleeved shirt and black trousers. Their hairstyle is Short, dark, styled hair. Key accessories include A small black lapel pin on his left lapel.\n\nPERSON_2 (A man in a white suit, holding a wine glass, who seems central to the group.):\nAn East Asian man, likely in his 20s or 30s, with dark, medium-length hair. He has a slim build and a friendly, open expression. He is dressed formally in a stylish, light-colored pinstriped suit, a black turtleneck sweater, and light-colored pants.\nFor clothing, the person wears A light-colored pinstriped suit, a black turtleneck sweater, and light-colored pants. Their hairstyle is Medium-length dark hair.\n\nPERSON_3 (A woman with long dark hair sitting to the left of the man in the white suit.):\nAn East Asian woman, likely in her 20s or 30s. She has long, dark hair styled in a sleek, straight manner. She has a slender figure and is wearing an elegant, long-sleeved white dress with subtle stitching details.\nFor clothing, the person wears A long-sleeved white dress. Their hairstyle is Long, straight dark hair. Key accessories include Small stud earrings.\n\nPERSON_4 (A man in a grey suit, shortsighted, sitting next to the woman in white.):\nAn East Asian man, likely in his 20s or 30s, with short dark hair and wearing black-rimmed glasses. His build is solid. He is dressed in a light grey suit with a white collared shirt and dark tie.\nFor clothing, the person wears A light grey suit, a white collared shirt, and a dark tie. Their hairstyle is Short dark hair. Key accessories include Black-rimmed glasses.\n\nPERSON_5 (A woman in a white outfit who enters the scene to join the group.):\nA woman who is seen from the back. She has dark, shoulder-length hair and is wearing a white bucket hat, a white coat, and a darker top or dress underneath.\nFor clothing, the person wears A white coat and a white bucket hat. Their hairstyle is Dark, shoulder-length hair. Key accessories include A white bucket hat.\n\nPERSON_6 (A man in a brown suit in the background, looking at his phone.):\nAn East Asian man, likely in his 20s or 30s, with short dark hair and wearing glasses. He is seen in the background, standing and looking down at a phone. He is wearing a light brown or beige suit jacket.\nFor clothing, the person wears A light brown suit jacket. Their hairstyle is Short dark hair. Key accessories include Glasses.\n\nOBJECT_1 (A white wine glass held by PERSON_2.):\nA classic, clear, empty wine glass with a stem.\n\nSCENE_1 (A futuristic, modern lounge or VIP area with sleek, metallic features and blue lighting.):\nThe interior of a high-end lounge or a futuristic vehicle's cabin. It features a long brown leather sofa, a white coffee table, and highly polished, reflective metal walls. The background wall is adorned with extensive, grid-like blue LED lights and glowing horizontal strips, creating a cool and sophisticated ambiance. A low-lying smoke or mist effect is present on the floor area.\n\n\n[Shot Narrative Script]\n\n(Shot 1)\nTime Range: [0.0s – 4.5s]\nThis shot is a static shot, slightly high angle medium long shot.\nThe shot is a static medium long shot of [SCENE_1]. On a sofa, [PERSON_3] and [PERSON_2] are seated on the left, with [PERSON_2] holding [OBJECT_1], and [PERSON_4] next to them. [PERSON_1] is seated on the far right of the sofa, leaning back. In the background, [PERSON_6] stands by the left wall, looking at his phone. At [1.5s], [PERSON_2] looks towards the right of the frame and points with his left hand [1.8s]. At [1.9s], [PERSON_1] turns his head to look at [PERSON_2] as he speaks. A subtitle appears on screen: <subtitle>岁岁<\/subtitle> [1.1s]. [PERSON_1] then begins to get up from the sofa [2.1s]. A new subtitle appears: <subtitle>来我这<\/subtitle> [2.2s]. [PERSON_1] gets to his feet and turns away to the right, beginning to walk out of the frame [2.6s]. As [PERSON_1] is leaving, [PERSON_5] walks from the right side of the frame towards the group [3.0s]. [PERSON_1] exits the frame completely. [PERSON_5] stops in front of the sofa, seen from the back, as the shot continues.\n"}]</script>
+
+<script>
+const METHODS = [
+    { key: "Pretrained",          label: "Pretrained",  cls: "is-pretrained" },
+    { key: "CT_Baseline",         label: "SFT",         cls: "is-sft" },
+    { key: "CT-REPA",             label: "VideoREPA",   cls: "is-videorepa" },
+    { key: "Sal+NCE_MoAlign",     label: "MoAlign",     cls: "is-moalign" },
+    { key: "Sal+NCE_SaliencyW",   label: "SARA (ours)", cls: "is-sara" },
+];
+
+function loadSamples() {
+    const node = document.getElementById("captions-data");
+    try {
+        return JSON.parse(node.textContent);
+    } catch (e) {
+        console.error("Failed to parse embedded captions:", e);
+        return [];
+    }
+}
+
+const SAMPLES = loadSamples();
+
+function escapeHtml(s) {
+    return s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
+// Light highlighter for the MTSS structured caption: section headers, shot
+// markers, time ranges, entity references, and <subtitle> spans.
+function formatMtss(raw) {
+    let s = escapeHtml(raw);
+    // Subtitle markup that survived escaping arrives as &lt;subtitle&gt;...&lt;/subtitle&gt;.
+    s = s.replace(/&lt;subtitle&gt;([\s\S]*?)&lt;\/subtitle&gt;/g,
+                  '<span class="sub">$1</span>');
+    // Section headers like [Global Setup], [Cast & Setting Introduction], [Shot Narrative Script].
+    s = s.replace(/^\[([^\]\n]+?)\]\s*$/gm,
+                  '<span class="mtss-section">$1</span>');
+    // (Shot N) markers.
+    s = s.replace(/^(\(Shot\s+\d+\))/gm,
+                  '<span class="mtss-shot">$1</span>');
+    // Time ranges like [0.0s – 3.6s] / [0.5s] / Time Range: ...
+    s = s.replace(/(Time Range:\s*\[[^\]]+\])/g,
+                  '<span class="time">$1</span>');
+    s = s.replace(/(\[\s*\d+(?:\.\d+)?s\s*(?:[\u2013-]\s*\d+(?:\.\d+)?s\s*)?\])/g,
+                  '<span class="time">$1</span>');
+    // Entity references inside narration: [PERSON_3], [OBJECT_1], [SCENE_1].
+    s = s.replace(/\[(PERSON_\d+)\]/g, '<span class="ent person">$1</span>');
+    s = s.replace(/\[(OBJECT_\d+)\]/g, '<span class="ent object">$1</span>');
+    s = s.replace(/\[(SCENE_\d+)\]/g,  '<span class="ent scene">$1</span>');
+    // Bare entity tags at the start of cast descriptions (PERSON_3 ( ... ): ...).
+    s = s.replace(/(^|\n)(PERSON_\d+)(?=\s*\()/g, '$1<span class="ent person">$2</span>');
+    s = s.replace(/(^|\n)(OBJECT_\d+)(?=\s*\()/g, '$1<span class="ent object">$2</span>');
+    s = s.replace(/(^|\n)(SCENE_\d+)(?=\s*\()/g,  '$1<span class="ent scene">$2</span>');
+    return s;
+}
+
+// Pull a short preview line out of the MTSS caption for the collapsed state.
+function previewOf(raw) {
+    const m = raw.match(/Overall Scene:\s*([^\n]+)/);
+    if (m) return "Overall Scene — " + m[1].trim();
+    return raw.split("\n").map((l) => l.trim()).find((l) => l.length > 0) || "(no caption)";
+}
+
+function buildSampleCard(sample, idx) {
+    const card = document.createElement("div");
+    card.className = "sample-card";
+    card.id = sample.id;
+    card.dataset.caption = sample.caption.toLowerCase();
+    card.dataset.origId = (sample.original_id || "").toLowerCase();
+
+    const headerRow = document.createElement("div");
+    headerRow.className = "header-row";
+    headerRow.innerHTML = `
+        <span class="index-num">#${idx + 1}</span>
+        <span class="id">${sample.id}</span>
+    `;
+    card.appendChild(headerRow);
+
+    const wrap = document.createElement("div");
+    wrap.className = "caption-wrap";
+
+    const preview = document.createElement("p");
+    preview.className = "caption-preview";
+    preview.innerHTML = escapeHtml(previewOf(sample.caption))
+        + ' <span class="toggle">▾ show full MTSS prompt</span>';
+    wrap.appendChild(preview);
+
+    const mtss = document.createElement("div");
+    mtss.className = "mtss";
+    mtss.innerHTML = formatMtss(sample.caption);
+    wrap.appendChild(mtss);
+
+    preview.addEventListener("click", () => {
+        const open = mtss.classList.toggle("open");
+        const tog = preview.querySelector(".toggle");
+        tog.textContent = open ? "▴ hide MTSS prompt" : "▾ show full MTSS prompt";
+    });
+
+    card.appendChild(wrap);
+
+    if (sample.key_points && sample.key_points.trim()) {
+        const kp = document.createElement("div");
+        kp.className = "key-points";
+        kp.innerHTML = '<span class="kp-label">Key Points</span>'
+                     + escapeHtml(sample.key_points);
+        card.appendChild(kp);
+    }
+
+    const row = document.createElement("div");
+    row.className = "video-row";
+    METHODS.forEach((m) => {
+        const tile = document.createElement("div");
+        tile.className = `video-tile ${m.cls}`;
+        tile.innerHTML = `
+            <span class="label">${m.label}</span>
+            <video preload="metadata" muted loop playsinline controls
+                   src="videos/${sample.id}/${m.key}.mp4"></video>
+        `;
+        row.appendChild(tile);
+    });
+    card.appendChild(row);
+    return card;
+}
+
+function renderSamples() {
+    const list = document.getElementById("sampleList");
+    list.innerHTML = "";
+    SAMPLES.forEach((s, i) => list.appendChild(buildSampleCard(s, i)));
+    updateCount(SAMPLES.length);
+}
+
+function filterSamples() {
+    const q = document.getElementById("searchInput").value.trim().toLowerCase();
+    let visible = 0;
+    document.querySelectorAll(".sample-card").forEach((row) => {
+        const cap = row.dataset.caption || "";
+        const id  = row.id.toLowerCase();
+        const orig = row.dataset.origId || "";
+        const ok = !q || cap.includes(q) || id.includes(q) || orig.includes(q);
+        row.style.display = ok ? "" : "none";
+        if (ok) visible++;
+    });
+    updateCount(visible);
+}
+
+function updateCount(n) {
+    const el = document.getElementById("countLabel");
+    el.textContent = `${n} / ${SAMPLES.length} samples`;
+}
+
+function setAll(expanded) {
+    document.querySelectorAll(".sample-card").forEach((card) => {
+        const mtss = card.querySelector(".mtss");
+        const tog = card.querySelector(".caption-preview .toggle");
+        if (!mtss || !tog) return;
+        mtss.classList.toggle("open", expanded);
+        tog.textContent = expanded ? "▴ hide MTSS prompt" : "▾ show full MTSS prompt";
+    });
+}
+
+function setupLazyPlay() {
+    if (!("IntersectionObserver" in window)) return;
+    const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+            const v = e.target;
+            if (e.isIntersecting) {
+                v.play().catch(() => { /* autoplay restricted; user must click */ });
+            } else {
+                v.pause();
+            }
+        });
+    }, { threshold: 0.4 });
+    document.querySelectorAll(".video-tile video").forEach((v) => io.observe(v));
+}
+
+// Reveal sections on scroll (class added via JS so content is visible if JS is off).
+function setupReveal() {
+    const els = Array.from(document.querySelectorAll("section"));
+    els.forEach((e) => e.classList.add("reveal"));
+    if (!("IntersectionObserver" in window)) {
+        els.forEach((e) => e.classList.add("in"));
+        return;
+    }
+    const io = new IntersectionObserver((entries) => {
+        entries.forEach((en) => {
+            if (en.isIntersecting) {
+                en.target.classList.add("in");
+                io.unobserve(en.target);
+            }
+        });
+    }, { threshold: 0.08, rootMargin: "0px 0px -8% 0px" });
+    els.forEach((e) => io.observe(e));
+}
+
+// Highlight the nav link for the section currently in view.
+function setupScrollSpy() {
+    const links = Array.from(document.querySelectorAll(".nav-links a[href^='#']"));
+    const map = new Map();
+    links.forEach((a) => {
+        const id = a.getAttribute("href").slice(1);
+        const sec = document.getElementById(id);
+        if (sec) map.set(sec, a);
+    });
+    if (!map.size || !("IntersectionObserver" in window)) return;
+    const io = new IntersectionObserver((entries) => {
+        entries.forEach((en) => {
+            if (en.isIntersecting) {
+                links.forEach((l) => l.classList.remove("active"));
+                const a = map.get(en.target);
+                if (a) a.classList.add("active");
+            }
+        });
+    }, { threshold: 0.5, rootMargin: "-20% 0px -55% 0px" });
+    map.forEach((_, sec) => io.observe(sec));
+}
+
+// Count-up animation for the hero stat numbers.
+function setupCountUp() {
+    const nums = Array.from(document.querySelectorAll(".hero-stat .num"));
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    nums.forEach((el) => {
+        const raw = el.textContent.trim();
+        const m = raw.match(/^([^\d-]*)(-?[\d.]+)(.*)$/);
+        if (!m || reduce) return;
+        const [, prefix, numStr, suffix] = m;
+        const target = parseFloat(numStr);
+        const decimals = (numStr.split(".")[1] || "").length;
+        const dur = 1100, start = performance.now();
+        function tick(now) {
+            const t = Math.min(1, (now - start) / dur);
+            const eased = 1 - Math.pow(1 - t, 3);
+            const val = (target * eased).toFixed(decimals);
+            el.textContent = prefix + val + suffix;
+            if (t < 1) requestAnimationFrame(tick);
+            else el.textContent = raw;
+        }
+        requestAnimationFrame(tick);
+    });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    renderSamples();
+    setupLazyPlay();
+    setupReveal();
+    setupScrollSpy();
+    setupCountUp();
+});
+</script>
+
+</body>
+</html>
